@@ -92,6 +92,12 @@ The reason carries the weight, because most later questions are not literal matc
 - **Mod formulas are ported verbatim from OpenITG's `ArrowEffects.cpp`, not SM5's.**
   The lineage that matters is NotITG to OpenITG to StepMania 3.95; SM5 rewrote `ArrowEffects` and its formulas describe subtly different mods.
   `openitg/openitg` is archived, which is a feature here: it is frozen source in exactly the right lineage.
+- **The game is 2D. There is no 3D pipeline.**
+  OpenITG barely uses the third dimension: `GetZPos` is driven by `bumpy` alone, `GetRotationX` by `roll` alone, `GetRotationY` by `twirl` alone, and `NeedZBuffer()` returns true only when `bumpy` or `twirl` is active.
+  Everything else in the mod set is X, Y, Z-rotation, zoom and alpha, which Pixi sprites do natively.
+  The `ftw` chart uses neither `roll` nor `twirl`, so it has no per-note 3D rotation at all.
+  `bumpy`'s Z is approximated as a scale nudge, and the perspective family is one warp on the notefield container rather than anything per-note.
+  This is the single largest saving available: a 4x4 matrix stack with projected quads and a patched depth func is what NotITG charts need for models, proxies and render targets, and none of those are in scope.
 - **Mod maths runs in ITG units and is scaled to the viewport at the end.**
   Every formula is written against `SCREEN_HEIGHT` 480 and `ARROW_SIZE` 64, so working in those units means porting them without a scaling fudge.
   Getting this wrong is exactly what made the previous attempt's magnitudes drift.
@@ -150,10 +156,18 @@ public/songs/<slug>/
 ## Open questions
 
 - Which two songs join `ftw`.
-- Whether the notefield draws with Pixi meshes or a hand-built vertex buffer.
-  Decide when the bending holds are written, since that is the case that actually constrains it.
-- Whether the perspective mods drive a real projection matrix or a cheaper shear.
-  Try the shear first; it may be enough at this scale.
+- How the perspective family is applied to the notefield container.
+  A shear plus a per-column scale may be enough; a real projection is the fallback.
+  Either way it is one transform on the field, never per note.
+- Whether bending holds draw as a Pixi mesh strip or as a run of overlapping sprites.
+  The strip is more correct under heavy mods; decide when they are written.
+
+## Where the 2D decision stops holding
+
+If `roll` or `twirl` ever enter a chart, per-note X and Y rotation become real and a flat sprite no longer works.
+The same applies to any NotITG-style arbitrary per-note rotation.
+At that point the notefield needs four transformed corners per arrow rather than a sprite transform.
+That is a rewrite of the draw layer only, and nothing above it changes, which is why the renderer stays the only thing that knows Pixi exists.
 
 ## Risks
 
