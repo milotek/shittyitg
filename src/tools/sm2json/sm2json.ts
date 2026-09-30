@@ -50,18 +50,22 @@ bring(song.music, 'audio.ogg', ['-vn', '-c:a', 'libvorbis', '-q:a', '6', '-flags
 const background = bring(song.background, 'bg.png', ['-frames:v', '1'])
 
 const timing = new Timing(song.timing)
-const bpms = song.timing.bpms.map((b) => Math.round(b.bpm))
-const range =
-  Math.min(...bpms) === Math.max(...bpms)
-    ? String(bpms[0])
-    : `${Math.min(...bpms)}-${Math.max(...bpms)}`
+const span = (values: number[]) => {
+  const [low, high] = [Math.min(...values), Math.max(...values)].map(Math.round)
+  return low === high ? String(low) : `${low}-${high}`
+}
+// `*` is StepMania's "hide the BPM"; anything else it can say is one or two numbers.
+const shown = song.displayBpm.split(':').map(Number)
+const bpm =
+  song.displayBpm && shown.every(Number.isFinite)
+    ? span(shown)
+    : span(song.timing.bpms.map((b) => b.bpm))
 
 const notes: NotesFile = { timing: song.timing, charts: song.charts }
 const manifest: Manifest = {
   title: song.title + (song.subtitle ? ` ${song.subtitle}` : ''),
   artist: song.artist,
-  bpm:
-    song.displayBpm && !song.displayBpm.includes('*') ? song.displayBpm.replace(':', '-') : range,
+  bpm,
   audio: 'audio.ogg',
   ...(background ? { background: 'bg.png' } : {}),
   preview: song.sampleStart || Math.max(timing.secondAt(32), 0),
