@@ -177,7 +177,8 @@ Per-frame polling bakes up to 16 ms of error into every hit at 60 fps, and that 
 
 - The noteskin is Peter's Scalable Cel, baked offline into animated sprite sheets.
   The source mesh is a flat cel arrow whose animation is a UV scroll rather than bone animation, so a textured quad is visually indistinguishable from the model.
-  `bake_noteskin.py` already emits the required set: six tap quantisations, mine, receptor, and hold and roll body, cap and top, each in active and inactive states.
+  The source is `Not-ITG/peters-scalable-cel-HD` from Peter's Noteskins on GitHub, released under the Unlicense.
+  The baker in `tools/noteskin/` emits the required set: six tap quantisations, mine, receptor, and hold and roll body, cap and top, each in active and inactive states.
 - No runtime 3D model loading.
   Users download PNGs, and the `.ms3d` conversion is a build step that never reaches them.
 - Baked assets are committed.
@@ -240,14 +241,8 @@ Bemuse is mature and well built, but it is a finished BMS game with no mod syste
 
 The conclusion is that nothing external provides a notefield transform to hang mods on, and that transform is the only genuinely difficult component.
 
-### Reference implementations in this tree
-
-Neither is a dependency.
-Both are worth reading before writing the equivalent code.
-
-- `~/Projects/webmania` (Haxe) has a working `.sm` parser, timing, judgment windows, and `bake_noteskin.py`, which is reused directly.
-- `milotek/webmania` (TypeScript, private) has `src/engine/arrow/effects.ts`, a 421-line `ArrowEffects` port covering roughly forty mods.
-  It is the best available formula reference, though its perspective mods parse their arguments and then do nothing.
+Earlier attempts at this project are not reference material.
+Everything here is written against this document and sourced fresh.
 
 ## Roadmap
 
@@ -285,7 +280,7 @@ Nothing above the draw layer changes when that arrives, which is the reason the 
 - **Roadmap work migrating into v1.**
   Actors, scripting and full parity are all correct directions.
   The risk is that beginning any of them now means nothing ships.
-  `assets/songs/ftw/modfile.xml` remains a reference document and is never executed in v1.
+  `ftw`'s modchart is remade in this project's schema to the original's feel, never transcribed from its modfile.
 
 ## Open questions
 
