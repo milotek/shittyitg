@@ -65,6 +65,9 @@ export class SongAudio implements Clock {
         this.#origin
       )
     }
-    return stamp.contextTime + (performanceMs - stamp.performanceTime) / 1000 - this.#origin
+    // Just after a resume the stamp can be stale, and extrapolating from it overshoots. What is
+    // being heard can never be ahead of what the context has already rendered.
+    const heard = stamp.contextTime + (performanceMs - stamp.performanceTime) / 1000
+    return Math.min(heard, this.context.currentTime) - this.#origin
   }
 }
