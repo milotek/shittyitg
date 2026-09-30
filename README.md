@@ -31,6 +31,7 @@ Reconverting never touches an existing `mods.json`, so a modchart survives new s
 
 A modchart is `public/songs/<slug>/mods.json`: rows of `{ beat, len, ease, set }`, the Mirin Template's shape.
 Values are percentages, except `xmod` and `cmod`, which are a multiplier and a BPM, and the rotation mods, which are degrees.
+A chart can be written by hand or generated; `ftw`'s comes from `node src/tools/charts/ftw.ts`, which writes its `mods.json`.
 
 ## Rebuilding assets
 

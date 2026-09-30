@@ -1,0 +1,14 @@
+{
+  "title": "FTW",
+  "artist": "Let's Be Friends",
+  "bpm": "130",
+  "audio": "audio.ogg",
+  "background": "bg.png",
+  "preview": 14.769,
+  "difficulties": [
+    {
+      "name": "Challenge",
+      "meter": 10
+    }
+  ]
+}

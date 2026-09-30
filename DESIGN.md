@@ -241,8 +241,8 @@ Bemuse is mature and well built, but it is a finished BMS game with no mod syste
 
 The conclusion is that nothing external provides a notefield transform to hang mods on, and that transform is the only genuinely difficult component.
 
-Earlier attempts at this project are not reference material.
-Everything here is written against this document and sourced fresh.
+Code from earlier attempts at this project is not reference material.
+Their assets are, and `ftw`'s audio, simfile and background come from one of them.
 
 ## Roadmap
 
