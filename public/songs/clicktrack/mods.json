@@ -1,0 +1,28 @@
+{
+  "rows": [
+    {
+      "beat": 0,
+      "len": 0,
+      "ease": "instant",
+      "set": {
+        "xmod": 2.25
+      }
+    },
+    {
+      "beat": 16,
+      "len": 4,
+      "ease": "inOutSine",
+      "set": {
+        "drunk": 100
+      }
+    },
+    {
+      "beat": 48,
+      "len": 4,
+      "ease": "inOutSine",
+      "set": {
+        "drunk": 0
+      }
+    }
+  ]
+}
