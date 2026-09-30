@@ -28,9 +28,8 @@ Three consequences follow:
 
 ### v1 ships
 
-- A song wheel with three selectable songs.
-- `ftw` as the showpiece, carrying a full modchart.
-- Two further songs with a light mod pass, so the wheel is not bare.
+- A song wheel that lists every song folder present.
+- `ftw` as the showpiece and the only song, carrying a full modchart.
 - Twelve or more mods, including a perspective family.
 - Hold bodies that bend along the mod path.
 - Hit feedback and a combo counter.
@@ -274,9 +273,9 @@ Nothing above the draw layer changes when that arrives, which is the reason the 
 - **`ftw`'s audio is presumably copyrighted.**
   It is the chosen showpiece, and both a public link and a portfolio piece mean it stays published.
   This is an accepted exposure rather than an oversight.
-- **Authoring three modcharts is the dominant cost.**
-  Only one is heavy, which is the mitigation.
-  If the schedule slips, the two light charts drop to a handful of mod rows each rather than the showpiece being cut.
+- **Authoring the `ftw` modchart is the dominant cost.**
+  It is the only chart v1 carries, so nothing competes with it for time.
+  Further songs arrive after v1 as dropped-in folders, and none of them is allowed to delay the showpiece.
 - **Roadmap work migrating into v1.**
   Actors, scripting and full parity are all correct directions.
   The risk is that beginning any of them now means nothing ships.
@@ -284,7 +283,7 @@ Nothing above the draw layer changes when that arrives, which is the reason the 
 
 ## Open questions
 
-- Which two songs join `ftw`.
+- Which songs join `ftw` after v1.
 - How the perspective family shapes the field's corner transform.
   A shear plus a per-column scale may be sufficient.
 - How many subdivisions a hold body needs before it stops visibly faceting under heavy mods.
