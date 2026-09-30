@@ -34,6 +34,8 @@ export type Manifest = {
   preview: number
   /** One per chart in notes.json, in the same order. */
   difficulties: { name: string; meter: number }[]
+  /** A test song rather than content: listed while developing, left out of a build. */
+  fixture?: true
 }
 
 const ROWS_PER_BEAT = 48

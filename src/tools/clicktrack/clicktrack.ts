@@ -116,6 +116,7 @@ const manifest: Manifest = {
   audio: 'audio.ogg',
   preview: 8,
   difficulties: notes.charts.map((c) => ({ name: c.difficulty, meter: c.meter })),
+  fixture: true,
 }
 
 mkdirSync(OUT, { recursive: true })

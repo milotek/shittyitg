@@ -12,8 +12,12 @@ const SONGS = join(import.meta.dirname, 'public/songs')
 function songs(): Plugin {
   const id = 'virtual:songs'
   const resolved = `\0${id}`
+  let building = false
   return {
     name: 'shititg-songs',
+    configResolved(config) {
+      building = config.command === 'build'
+    },
     resolveId: (source) => (source === id ? resolved : undefined),
     load(target) {
       if (target !== resolved) return
@@ -23,6 +27,7 @@ function songs(): Plugin {
           slug: entry.name,
           manifest: JSON.parse(readFileSync(join(SONGS, entry.name, 'manifest.json'), 'utf8')),
         }))
+        .filter((song) => !(building && song.manifest.fixture))
       return `export default ${JSON.stringify(list)}`
     },
     configureServer(server) {
