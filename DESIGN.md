@@ -92,6 +92,14 @@ The reason carries the weight, because most later questions are not literal matc
 - **Mod formulas are ported verbatim from OpenITG's `ArrowEffects.cpp`, not SM5's.**
   The lineage that matters is NotITG to OpenITG to StepMania 3.95; SM5 rewrote `ArrowEffects` and its formulas describe subtly different mods.
   `openitg/openitg` is archived, which is a feature here: it is frozen source in exactly the right lineage.
+- **Everything draws as a four-corner quad written into one buffer, not as Pixi sprites.**
+  Bending holds already require a subdivided quad strip, so the mesh machinery is in scope no matter what, and putting taps through the same path costs one transform function rather than two draw paths.
+  It also keeps `roll`, `twirl` and genuine per-note foreshortening under the perspective mods available, which sprites would rule out permanently.
+  One `Geometry` of interleaved position, UV and tint, rewritten each frame, one draw call per texture.
+- **Four-corner quads in 2D, and nothing beyond that.**
+  No 4x4 matrix stack, no frustum or lookAt, no `w` component, no depth buffer, no render targets.
+  That machinery exists in the previous TypeScript attempt because NotITG charts need models, proxies and render-to-texture, and none of those are in scope here.
+  Draw order is a sort, which is what OpenITG does too, since it only enables a Z buffer for `bumpy` and `twirl`.
 - **The game is 2D. There is no 3D pipeline.**
   OpenITG barely uses the third dimension: `GetZPos` is driven by `bumpy` alone, `GetRotationX` by `roll` alone, `GetRotationY` by `twirl` alone, and `NeedZBuffer()` returns true only when `bumpy` or `twirl` is active.
   Everything else in the mod set is X, Y, Z-rotation, zoom and alpha, which Pixi sprites do natively.
@@ -159,15 +167,15 @@ public/songs/<slug>/
 - How the perspective family is applied to the notefield container.
   A shear plus a per-column scale may be enough; a real projection is the fallback.
   Either way it is one transform on the field, never per note.
-- Whether bending holds draw as a Pixi mesh strip or as a run of overlapping sprites.
-  The strip is more correct under heavy mods; decide when they are written.
+- How many subdivisions a hold body needs before it stops visibly faceting under `drunk` and `tornado`.
+  Start at eight per beat and tune by eye.
 
 ## Where the 2D decision stops holding
 
-If `roll` or `twirl` ever enter a chart, per-note X and Y rotation become real and a flat sprite no longer works.
-The same applies to any NotITG-style arbitrary per-note rotation.
-At that point the notefield needs four transformed corners per arrow rather than a sprite transform.
-That is a rewrite of the draw layer only, and nothing above it changes, which is why the renderer stays the only thing that knows Pixi exists.
+Four-corner quads already cover `roll`, `twirl` and per-note foreshortening, so the wall is further out than it would be with sprites.
+What 2D genuinely cannot do is anything needing true depth: arrows correctly occluding each other, render-to-texture effects, or 3D models.
+Reaching for any of those means a depth buffer and a projection matrix, and at that point it is a different project.
+Nothing above the draw layer would change, which is why the renderer stays the only thing that knows Pixi exists.
 
 ## Risks
 
