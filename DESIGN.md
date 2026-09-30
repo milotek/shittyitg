@@ -92,25 +92,27 @@ The reason carries the weight, because most later questions are not literal matc
 - **Mod formulas are ported verbatim from OpenITG's `ArrowEffects.cpp`, not SM5's.**
   The lineage that matters is NotITG to OpenITG to StepMania 3.95; SM5 rewrote `ArrowEffects` and its formulas describe subtly different mods.
   `openitg/openitg` is archived, which is a feature here: it is frozen source in exactly the right lineage.
-- **Everything draws as a four-corner quad written into one buffer, not as Pixi sprites.**
-  Bending holds already require a subdivided quad strip, so the mesh machinery is in scope no matter what, and putting taps through the same path costs one transform function rather than two draw paths.
-  It also keeps `roll`, `twirl` and genuine per-note foreshortening under the perspective mods available, which sprites would rule out permanently.
-  One `Geometry` of interleaved position, UV and tint, rewritten each frame, one draw call per texture.
-- **Four-corner quads in 2D, and nothing beyond that.**
-  No 4x4 matrix stack, no frustum or lookAt, no `w` component, no depth buffer, no render targets.
-  That machinery exists in the previous TypeScript attempt because NotITG charts need models, proxies and render-to-texture, and none of those are in scope here.
-  Draw order is a sort, which is what OpenITG does too, since it only enables a Z buffer for `bumpy` and `twirl`.
-- **The game is 2D. There is no 3D pipeline.**
-  OpenITG barely uses the third dimension: `GetZPos` is driven by `bumpy` alone, `GetRotationX` by `roll` alone, `GetRotationY` by `twirl` alone, and `NeedZBuffer()` returns true only when `bumpy` or `twirl` is active.
-  Everything else in the mod set is X, Y, Z-rotation, zoom and alpha, which Pixi sprites do natively.
-  The `ftw` chart uses neither `roll` nor `twirl`, so it has no per-note 3D rotation at all.
-  `bumpy`'s Z is approximated as a scale nudge, and the perspective family is one warp on the notefield container rather than anything per-note.
-  This is the single largest saving available: a 4x4 matrix stack with projected quads and a patched depth func is what NotITG charts need for models, proxies and render targets, and none of those are in scope.
 - **Mod maths runs in ITG units and is scaled to the viewport at the end.**
   Every formula is written against `SCREEN_HEIGHT` 480 and `ARROW_SIZE` 64, so working in those units means porting them without a scaling fudge.
   Getting this wrong is exactly what made the previous attempt's magnitudes drift.
 - **Layout is fully responsive, targeting 16:9.**
   It has to look right on a 2K display on someone else's machine, because the deliverable is a link.
+
+### Rendering
+
+- **Everything draws as a four-corner quad written into one buffer, not as Pixi sprites.**
+  Bending holds already require a subdivided quad strip, so the mesh machinery is in scope no matter what, and putting taps through the same path costs one transform function rather than two draw paths.
+  It also keeps `roll`, `twirl` and genuine per-note foreshortening available, which sprites would have ruled out permanently.
+  One `Geometry` of interleaved position, UV and tint, rewritten each frame, one draw call per texture.
+- **Four transformed corners, and nothing beyond that.**
+  No 4x4 matrix stack, no frustum or lookAt, no `w` component, no depth buffer, no render targets.
+  That machinery exists in the previous TypeScript attempt because NotITG charts need models, proxies and render-to-texture, and none of those are in scope here.
+- **Draw order is a sort, not a depth buffer.**
+  OpenITG agrees: `NeedZBuffer()` returns true only when `bumpy` or `twirl` is active, so ITG itself runs without one almost always.
+- **The third dimension barely appears in the mod set, so it is never a per-note matrix.**
+  `GetZPos` is driven by `bumpy` alone, `GetRotationX` by `roll` alone, `GetRotationY` by `twirl` alone.
+  Everything else is X, Y, Z-rotation, zoom and alpha.
+  Corner transforms cover `roll` and `twirl` when a chart wants them, `bumpy`'s Z reads as a scale on the quad, and the perspective family shapes the field's corner transform rather than getting a projection of its own.
 
 ### Timing
 
