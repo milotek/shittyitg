@@ -3,5 +3,11 @@
   "artist": "shitITG",
   "bpm": "130",
   "audio": "audio.ogg",
-  "preview": 8
+  "preview": 8,
+  "difficulties": [
+    {
+      "name": "Challenge",
+      "meter": 5
+    }
+  ]
 }

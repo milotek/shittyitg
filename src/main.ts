@@ -1,30 +1,52 @@
 import { mountDevPanel } from './client/devpanel.ts'
 import { Gameplay } from './client/gameplay/gameplay.ts'
+import { SongSelect } from './client/select/select.ts'
 import { loadSong } from './client/song.ts'
+import { Background } from './render/background.ts'
 import { Hud } from './render/hud/hud.ts'
 import { NotefieldView } from './render/notefield/view.ts'
 import { createStage } from './render/stage.ts'
 
 const host = document.getElementById('app')
+const title = document.getElementById('title')
 const prompt = document.getElementById('prompt')
-if (!host || !prompt) throw new Error('index.html is missing #app or #prompt')
+if (!host || !title || !prompt) throw new Error('index.html is missing #app, #title or #prompt')
 
 const app = await createStage(host)
 const [field, hud] = await Promise.all([NotefieldView.load(), Hud.load()])
-const query = new URLSearchParams(location.search)
-const song = await loadSong(query.get('song') ?? 'clicktrack')
+const background = new Background()
+const select = new SongSelect()
 
+// Browsers only let audio start from a user gesture, so the title screen asks for one.
 prompt.textContent = 'press any key'
-const begin = async () => {
-  removeEventListener('keydown', begin)
-  removeEventListener('pointerdown', begin)
-  prompt.hidden = true
-  const gameplay = new Gameplay(app, field, hud, song)
+await new Promise<void>((resolve) => {
+  const go = (event: Event) => {
+    event.preventDefault()
+    removeEventListener('keydown', go)
+    removeEventListener('pointerdown', go)
+    resolve()
+  }
+  addEventListener('keydown', go)
+  addEventListener('pointerdown', go)
+})
+title.hidden = true
+
+const play = async (slug: string, chart: number, fromBeat: number) => {
+  const gameplay = new Gameplay(app, { field, hud, background }, await loadSong(slug), chart)
+  let unmount: (() => void) | undefined
   if (import.meta.env.DEV) {
-    mountDevPanel(gameplay.mods)
+    unmount = mountDevPanel(gameplay.mods)
     ;(window as unknown as { gameplay: Gameplay }).gameplay = gameplay
   }
-  await gameplay.play(Number(query.get('at') ?? 0))
+  await gameplay.play(fromBeat)
+  unmount?.()
 }
-addEventListener('keydown', begin)
-addEventListener('pointerdown', begin)
+
+const query = new URLSearchParams(location.search)
+const direct = query.get('song')
+if (direct) await play(direct, 0, Number(query.get('at') ?? 0))
+
+for (;;) {
+  const choice = await select.choose()
+  await play(choice.slug, choice.chart, 0)
+}

@@ -104,17 +104,18 @@ const mods: ModsFile = {
   ],
 }
 
+const notes: NotesFile = {
+  timing: { offset: 0, bpms: [{ beat: 0, bpm: BPM }], stops: [] },
+  charts: [{ difficulty: 'Challenge', meter: 5, notes: chart() }],
+}
+
 const manifest: Manifest = {
   title: 'Click Track',
   artist: 'shitITG',
   bpm: String(BPM),
   audio: 'audio.ogg',
   preview: 8,
-}
-
-const notes: NotesFile = {
-  timing: { offset: 0, bpms: [{ beat: 0, bpm: BPM }], stops: [] },
-  charts: [{ difficulty: 'Challenge', meter: 5, notes: chart() }],
+  difficulties: notes.charts.map((c) => ({ name: c.difficulty, meter: c.meter })),
 }
 
 mkdirSync(OUT, { recursive: true })
@@ -132,6 +133,11 @@ execFileSync(
     'libvorbis',
     '-q:a',
     '4',
+    // Ogg picks a random stream serial per encode; bit-exact keeps a rerun from churning the file.
+    '-fflags',
+    '+bitexact',
+    '-flags:a',
+    '+bitexact',
     join(OUT, 'audio.ogg'),
   ],
   {

@@ -90,6 +90,13 @@ export class Hud {
     this.#label.y = 1.05 * cell
   }
 
+  reset(): void {
+    this.#judgedAt = Number.NEGATIVE_INFINITY
+    this.#comboAt = Number.NEGATIVE_INFINITY
+    this.#shownCombo = -1
+    this.#judgment.alpha = 0
+  }
+
   judge(grade: GradeValue, at: number): void {
     this.#judgment.text = LABEL[grade].toUpperCase()
     this.#judgment.style.fill = COLOUR[grade]

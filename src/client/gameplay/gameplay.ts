@@ -7,6 +7,7 @@ import { Grade } from '../../engine/play/judge.ts'
 import { Play, type PlayEvent } from '../../engine/play/play.ts'
 import { NoteState } from '../../engine/play/state.ts'
 import { Timing } from '../../engine/timing/timing.ts'
+import type { Background } from '../../render/background.ts'
 import type { Hud } from '../../render/hud/hud.ts'
 import type { Flash } from '../../render/notefield/field.ts'
 import type { NotefieldView } from '../../render/notefield/view.ts'
@@ -29,6 +30,7 @@ export class Gameplay {
   readonly #app: Application
   readonly #field: NotefieldView
   readonly #hud: Hud
+  readonly #background: Background
   readonly #song: SongFiles
   readonly #chart: Chart
   readonly #timing: Timing
@@ -43,10 +45,16 @@ export class Gameplay {
   #consumed = 0
   #finished: (() => void) | undefined
 
-  constructor(app: Application, field: NotefieldView, hud: Hud, song: SongFiles, chartIndex = 0) {
+  constructor(
+    app: Application,
+    views: { field: NotefieldView; hud: Hud; background: Background },
+    song: SongFiles,
+    chartIndex: number,
+  ) {
     this.#app = app
-    this.#field = field
-    this.#hud = hud
+    this.#field = views.field
+    this.#hud = views.hud
+    this.#background = views.background
     this.#song = song
     this.#timing = new Timing(song.notes.timing)
     this.#mods = new ModState(song.mods.rows)
@@ -70,15 +78,31 @@ export class Gameplay {
     return this.#timing.beatAt(this.audio.timeSeconds())
   }
 
-  /** Resolves once the song has played out. Starts from `fromBeat` only while inspecting a chart. */
+  /**
+   * Resolves once the song has played out or the player backs out with Escape. Starts from
+   * `fromBeat` only while inspecting a chart.
+   */
   async play(fromBeat = 0): Promise<void> {
-    await this.audio.load(this.#song.base + this.#song.manifest.audio)
-    this.#app.stage.addChild(this.#field.container, this.#hud.container)
+    const { base, manifest } = this.#song
+    await Promise.all([
+      this.audio.load(base + manifest.audio),
+      this.#background.show(manifest.background ? base + manifest.background : undefined),
+    ])
+    this.#hud.reset()
+    this.#app.stage.addChild(this.#background.container, this.#field.container, this.#hud.container)
     this.#app.ticker.add(this.#tick)
-    this.#unbind = bindInput(
+    const unbindPlay = bindInput(
       (column, stamp) => this.#play.press(column, this.audio.at(stamp)),
       (column, stamp) => this.#play.release(column, this.audio.at(stamp)),
     )
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.code === 'Escape') this.#end()
+    }
+    addEventListener('keydown', onEscape)
+    this.#unbind = () => {
+      unbindPlay()
+      removeEventListener('keydown', onEscape)
+    }
     const done = new Promise<void>((resolve) => {
       this.#finished = resolve
     })
@@ -86,11 +110,18 @@ export class Gameplay {
     return done
   }
 
-  stop(): void {
+  #end(): void {
     this.#unbind?.()
     this.audio.stop()
+    void this.audio.context.close()
     this.#app.ticker.remove(this.#tick)
-    this.#app.stage.removeChild(this.#field.container, this.#hud.container)
+    this.#app.stage.removeChild(
+      this.#background.container,
+      this.#field.container,
+      this.#hud.container,
+    )
+    this.#background.hide()
+    this.#finished?.()
   }
 
   #frame(): void {
@@ -105,6 +136,7 @@ export class Gameplay {
     }
 
     const { width, height } = this.#app.screen
+    this.#background.layout(width, height)
     const cell = this.#field.layout(width, height)
     this.#hud.layout(cell, width, height)
     this.#hud.update(seconds, this.#play.combo)
@@ -123,10 +155,7 @@ export class Gameplay {
       warp: fieldWarp(this.#mods),
     })
 
-    if (seconds > this.audio.duration + 1) {
-      this.stop()
-      this.#finished?.()
-    }
+    if (seconds > this.audio.duration + 1) this.#end()
   }
 
   #consume(): void {

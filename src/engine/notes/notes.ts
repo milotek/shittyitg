@@ -32,6 +32,8 @@ export type Manifest = {
   background?: string
   /** Seconds into the audio the wheel previews from. */
   preview: number
+  /** One per chart in notes.json, in the same order. */
+  difficulties: { name: string; meter: number }[]
 }
 
 const ROWS_PER_BEAT = 48

@@ -54,7 +54,7 @@ const RANGE: Record<string, [number, number]> = {
 }
 
 /** Dev builds only: pin any one mod with a slider, so each can be judged on its own in motion. */
-export function mountDevPanel(mods: ModState): void {
+export function mountDevPanel(mods: ModState): () => void {
   const panel = document.createElement('form')
   panel.id = 'devpanel'
   panel.innerHTML = `
@@ -94,4 +94,5 @@ export function mountDevPanel(mods: ModState): void {
   })
   panel.addEventListener('keydown', (event) => event.stopPropagation())
   ;(window as unknown as { mods: ModState }).mods = mods
+  return () => panel.remove()
 }
