@@ -5,14 +5,14 @@ import { loadSong } from './client/song.ts'
 import { Background } from './render/background.ts'
 import { Hud } from './render/hud/hud.ts'
 import { NotefieldView } from './render/notefield/view.ts'
-import { createStage } from './render/stage.ts'
+import { Stage } from './render/stage.ts'
 
 const host = document.getElementById('app')
 const title = document.getElementById('title')
 const prompt = document.getElementById('prompt')
 if (!host || !title || !prompt) throw new Error('index.html is missing #app, #title or #prompt')
 
-const app = await createStage(host)
+const stage = await Stage.create(host)
 const [field, hud] = await Promise.all([NotefieldView.load(), Hud.load()])
 const background = new Background()
 const select = new SongSelect()
@@ -32,7 +32,7 @@ await new Promise<void>((resolve) => {
 title.hidden = true
 
 const play = async (slug: string, chart: number, fromBeat: number) => {
-  const gameplay = new Gameplay(app, { field, hud, background }, await loadSong(slug), chart)
+  const gameplay = new Gameplay(stage, { field, hud, background }, await loadSong(slug), chart)
   let unmount: (() => void) | undefined
   if (import.meta.env.DEV) {
     unmount = mountDevPanel(gameplay.mods)

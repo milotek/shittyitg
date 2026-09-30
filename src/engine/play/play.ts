@@ -128,9 +128,9 @@ export class Play {
     if (!holding) return
 
     const down = this.#downSince[column] !== undefined
-    const window = holding.roll ? ROLL_WINDOW : HOLD_WINDOW
+    const grace = holding.roll ? ROLL_WINDOW : HOLD_WINDOW
     const touching = !holding.roll && down
-    const dropAt = touching ? Number.POSITIVE_INFINITY : holding.lastTouch + window
+    const dropAt = touching ? Number.POSITIVE_INFINITY : holding.lastTouch + grace
 
     if (dropAt < holding.end && dropAt <= now) {
       this.state[holding.note] = NoteState.dropped

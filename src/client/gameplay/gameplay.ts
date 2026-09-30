@@ -1,4 +1,3 @@
-import type { Application } from 'pixi.js'
 import { COLUMNS } from '../../engine/effects/field.ts'
 import { fieldWarp } from '../../engine/effects/warp.ts'
 import { ModState } from '../../engine/mods/track.ts'
@@ -11,6 +10,7 @@ import type { Background } from '../../render/background.ts'
 import type { Hud } from '../../render/hud/hud.ts'
 import type { Flash } from '../../render/notefield/field.ts'
 import type { NotefieldView } from '../../render/notefield/view.ts'
+import type { Stage } from '../../render/stage.ts'
 import { SongAudio } from '../audio.ts'
 import { bindInput } from '../input.ts'
 import type { SongFiles } from '../song.ts'
@@ -27,7 +27,7 @@ const FLASH_SPRITE: Record<number, string> = {
 
 export class Gameplay {
   readonly audio = new SongAudio()
-  readonly #app: Application
+  readonly #stage: Stage
   readonly #field: NotefieldView
   readonly #hud: Hud
   readonly #background: Background
@@ -40,18 +40,18 @@ export class Gameplay {
   readonly #flashes: (Flash | undefined)[] = new Array(COLUMNS).fill(undefined)
   readonly #holding: boolean[] = new Array(COLUMNS).fill(false)
   readonly #pressed: number[] = new Array(COLUMNS).fill(0)
-  readonly #tick = () => this.#frame()
+  #stopFrames: (() => void) | undefined
   #unbind: (() => void) | undefined
   #consumed = 0
   #finished: (() => void) | undefined
 
   constructor(
-    app: Application,
+    stage: Stage,
     views: { field: NotefieldView; hud: Hud; background: Background },
     song: SongFiles,
     chartIndex: number,
   ) {
-    this.#app = app
+    this.#stage = stage
     this.#field = views.field
     this.#hud = views.hud
     this.#background = views.background
@@ -89,8 +89,8 @@ export class Gameplay {
       this.#background.show(manifest.background ? base + manifest.background : undefined),
     ])
     this.#hud.reset()
-    this.#app.stage.addChild(this.#background.container, this.#field.container, this.#hud.container)
-    this.#app.ticker.add(this.#tick)
+    this.#stage.show(this.#background, this.#field, this.#hud)
+    this.#stopFrames = this.#stage.every(() => this.#frame())
     const unbindPlay = bindInput(
       (column, stamp) => this.#play.press(column, this.audio.at(stamp)),
       (column, stamp) => this.#play.release(column, this.audio.at(stamp)),
@@ -114,12 +114,8 @@ export class Gameplay {
     this.#unbind?.()
     this.audio.stop()
     void this.audio.context.close()
-    this.#app.ticker.remove(this.#tick)
-    this.#app.stage.removeChild(
-      this.#background.container,
-      this.#field.container,
-      this.#hud.container,
-    )
+    this.#stopFrames?.()
+    this.#stage.hide(this.#background, this.#field, this.#hud)
     this.#background.hide()
     this.#finished?.()
   }
@@ -135,7 +131,7 @@ export class Gameplay {
       this.#pressed[column] = this.#play.isDown(column) ? 1 : 0
     }
 
-    const { width, height } = this.#app.screen
+    const { width, height } = this.#stage
     this.#background.layout(width, height)
     const cell = this.#field.layout(width, height)
     this.#hud.layout(cell, width, height)
