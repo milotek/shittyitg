@@ -41,14 +41,21 @@ export type FieldFrame = {
   state: Uint8Array
   /** How brightly each column's receptor is lit by a press, 0 to 1. */
   pressed: readonly number[]
+  /** The latest hit on each column, if any, for the flash over its receptor. */
+  flashes: readonly (Flash | undefined)[]
+  /** Columns with a hold or roll currently being held. */
+  holding: readonly boolean[]
   warp: Warp
 }
+
+export type Flash = { sprite: string; at: number; additive: boolean }
 
 const spot = placement()
 const edge = placement()
 
 export function drawField(list: DrawList, frame: FieldFrame): void {
   drawReceptors(list, frame)
+  drawFlashes(list, frame)
 
   const { chart, song, state } = frame
   const notes = chart.notes
@@ -99,6 +106,58 @@ function drawReceptors(list: DrawList, frame: FieldFrame) {
       index * 8,
     )
     list.paint(index, receptor.uv, level, level, level, alpha, pressed * 0.3 * alpha)
+  }
+}
+
+/**
+ * The skin's ghost arrow: it lands a touch oversized and eases back to size as it fades, over
+ * 0.15 seconds. Held columns keep a steady glow instead, so a hold reads as being held.
+ */
+const FLASH_SECONDS = 0.15
+
+function drawFlashes(list: DrawList, frame: FieldFrame) {
+  const { mods, song, skin, warp } = frame
+  for (let column = 0; column < COLUMNS; column++) {
+    const flash = frame.flashes[column]
+    if (!flash) continue
+    const age = (song.seconds - flash.at) / FLASH_SECONDS
+    if (age < 0 || age >= 1) continue
+
+    const sprite = skin.sprite(flash.sprite)
+    place(mods, song, column, 0, 0, spot)
+    const eased = age * age
+    const zoom = 1.1 - 0.1 * eased
+    spot.scaleX *= zoom
+    spot.scaleY *= zoom
+    const index = list.add(Layer.flash, 0)
+    corners(
+      spot,
+      sprite.width,
+      sprite.height,
+      COLUMN_SPIN[column] as number,
+      warp,
+      list.positions,
+      index * 8,
+    )
+    if (flash.additive) list.paintAdditive(index, sprite.uv, 1, 1, 1, 1 - eased)
+    else list.paint(index, sprite.uv, 1, 1, 1, 1 - eased, 0.2 * (1 - eased))
+  }
+
+  const held = skin.sprite('flashHold')
+  for (let column = 0; column < COLUMNS; column++) {
+    if (!frame.holding[column]) continue
+    place(mods, song, column, 0, 0, spot)
+    const index = list.add(Layer.flash, 0)
+    corners(
+      spot,
+      held.width,
+      held.height,
+      COLUMN_SPIN[column] as number,
+      warp,
+      list.positions,
+      index * 8,
+    )
+    list.paintAdditive(index, held.uv, 1, 1, 1, 0.75 + 0.25 * Math.cos(song.seconds * 30))
   }
 }
 

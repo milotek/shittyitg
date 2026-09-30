@@ -75,6 +75,22 @@ export class DrawList {
     this.glows[index] = clamp01(glow) * a
   }
 
+  /**
+   * Adds light instead of covering what is beneath. The blend is premultiplied, so colour with
+   * zero alpha is additive, which keeps glows inside the same single pipeline state.
+   */
+  paintAdditive(
+    index: number,
+    uv: UvRect,
+    red: number,
+    green: number,
+    blue: number,
+    intensity: number,
+  ): void {
+    this.paint(index, uv, red * intensity, green * intensity, blue * intensity, 1, 0)
+    this.colors[index] = ((this.colors[index] as number) & 0x00ffffff) >>> 0
+  }
+
   order(): readonly number[] {
     const order = this.#order
     order.length = this.count
