@@ -15,6 +15,18 @@ export type ModsFile = {
   rows: ModRow[]
 }
 
-export const RAW_UNITS = new Set(['xmod', 'cmod'])
+/** Degrees and multipliers are typed as themselves; everything else is a percentage. */
+export const RAW_UNITS = new Set([
+  'xmod',
+  'cmod',
+  'confusionoffset',
+  'confusionoffset0',
+  'confusionoffset1',
+  'confusionoffset2',
+  'confusionoffset3',
+  'rotationx',
+  'rotationy',
+  'rotationz',
+])
 
 export const REST: Record<string, number> = { xmod: 1 }

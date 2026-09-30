@@ -1,4 +1,5 @@
 import type { Application } from 'pixi.js'
+import { fieldWarp } from '../../engine/effects/warp.ts'
 import { ModState } from '../../engine/mods/track.ts'
 import { Timing } from '../../engine/timing/timing.ts'
 import type { NotefieldView } from '../../render/notefield/view.ts'
@@ -15,7 +16,7 @@ export class Gameplay {
   readonly #timing: Timing
   readonly #mods: ModState
   readonly #seconds: Float64Array
-  readonly #gone: Uint8Array
+  readonly #state: Uint8Array
   readonly #tick = () => this.#frame()
 
   constructor(app: Application, field: NotefieldView, song: SongFiles, chartIndex = 0) {
@@ -28,14 +29,23 @@ export class Gameplay {
     const chart = song.notes.charts[chartIndex]
     if (!chart) throw new Error(`${song.slug} has no chart ${chartIndex}`)
     this.#seconds = Float64Array.from(chart.notes, (note) => this.#timing.secondAt(note.beat))
-    this.#gone = new Uint8Array(chart.notes.length)
+    this.#state = new Uint8Array(chart.notes.length)
   }
 
-  async start(): Promise<void> {
+  songBeat(): number {
+    return this.#timing.beatAt(this.audio.timeSeconds())
+  }
+
+  get mods(): ModState {
+    return this.#mods
+  }
+
+  /** Plays from `fromBeat`, which is only ever nonzero while inspecting a chart. */
+  async start(fromBeat = 0): Promise<void> {
     await this.audio.load(this.#song.base + this.#song.manifest.audio)
     this.#app.stage.addChild(this.#field.container)
     this.#app.ticker.add(this.#tick)
-    await this.audio.play(0, LEAD_IN)
+    await this.audio.play(this.#timing.secondAt(fromBeat), LEAD_IN)
   }
 
   stop(): void {
@@ -53,10 +63,16 @@ export class Gameplay {
     const chart = this.#song.notes.charts[0]
     if (!chart) return
     this.#field.render({
-      chart: { notes: chart.notes, seconds: this.#seconds },
+      chart: {
+        notes: chart.notes,
+        seconds: this.#seconds,
+        secondAt: (b) => this.#timing.secondAt(b),
+      },
       mods: this.#mods,
       song: { beat, seconds },
-      gone: this.#gone,
+      state: this.#state,
+      pressed: [0, 0, 0, 0],
+      warp: fieldWarp(this.#mods),
     })
   }
 }

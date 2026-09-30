@@ -83,6 +83,7 @@ export function read(track: Track, beat: number): number {
 export class ModState {
   readonly #tracks: Map<string, Track>
   readonly #values = new Map<string, number>()
+  readonly #overrides = new Map<string, number>()
 
   constructor(rows: ModRow[]) {
     this.#tracks = buildTracks(rows)
@@ -90,6 +91,17 @@ export class ModState {
 
   update(beat: number): void {
     for (const [name, track] of this.#tracks) this.#values.set(name, read(track, beat))
+    for (const [name, value] of this.#overrides) this.#values.set(name, value)
+  }
+
+  /** Pins a mod regardless of the chart, in the engine's own units. For inspecting one mod at a time. */
+  override(name: string, value: number | undefined): void {
+    if (value === undefined) {
+      this.#overrides.delete(name)
+      this.#values.delete(name)
+    } else {
+      this.#overrides.set(name, value)
+    }
   }
 
   get(name: string): number {

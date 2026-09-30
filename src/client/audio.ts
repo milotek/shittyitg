@@ -53,11 +53,17 @@ export class SongAudio implements Clock {
   at(performanceMs: number): number {
     const stamp = this.context.getOutputTimestamp()
     if (
+      this.context.state !== 'running' ||
       stamp.contextTime === undefined ||
       stamp.performanceTime === undefined ||
       stamp.contextTime === 0
     ) {
-      return this.context.currentTime - this.context.outputLatency - this.#origin
+      return (
+        this.context.currentTime -
+        this.context.baseLatency -
+        this.context.outputLatency -
+        this.#origin
+      )
     }
     return stamp.contextTime + (performanceMs - stamp.performanceTime) / 1000 - this.#origin
   }
