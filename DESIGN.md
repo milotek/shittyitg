@@ -5,6 +5,12 @@ A small web rhythm game built around ITG-style modcharts.
 The point of the project is the modcharts.
 Everything else exists to give them something to happen to.
 
+**ITG is the inspiration, not the specification.**
+Its mods get borrowed because twenty years of people playing them proved the shapes read well in motion, which is expensive to rediscover from scratch.
+That is the whole of the debt.
+Where an ITG behaviour is worse than an alternative the alternative wins, mods ITG never had are fair game, and nothing here is ever measured against a reference capture.
+This is not a port and fidelity is not a goal.
+
 ## What ships
 
 Open a URL, pick one of three songs, play it, watch the field come apart.
@@ -87,14 +93,15 @@ The reason carries the weight, because most later questions are not literal matc
   `PlayerOptions::Approach` walks toward a target at a fixed rate because that is all a 2005 engine could express.
   These charts are new, so they get real easing functions.
 
-### Mod maths
+### Mods
 
-- **Mod formulas are ported verbatim from OpenITG's `ArrowEffects.cpp`, not SM5's.**
-  The lineage that matters is NotITG to OpenITG to StepMania 3.95; SM5 rewrote `ArrowEffects` and its formulas describe subtly different mods.
-  `openitg/openitg` is archived, which is a feature here: it is frozen source in exactly the right lineage.
-- **Mod maths runs in ITG units and is scaled to the viewport at the end.**
-  Every formula is written against `SCREEN_HEIGHT` 480 and `ARROW_SIZE` 64, so working in those units means porting them without a scaling fudge.
-  Getting this wrong is exactly what made the previous attempt's magnitudes drift.
+- **`ArrowEffects` is where the formulas start, not where they end.**
+  Read OpenITG's copy rather than SM5's: it is shorter, frozen, and closer to the mods people actually remember.
+  Then tune the constants, rename what is badly named, drop what is not fun and add what ITG never had.
+  A formula being different from ITG's is not a bug.
+- **Mod maths works in arrow cells, not pixels and not ITG's 640x480.**
+  One cell is one arrow width, so a formula means the same thing at any resolution and nothing is pinned to a 2005 virtual screen.
+  The previous attempt's magnitudes drifted precisely because its unit system was left implicit.
 - **Layout is fully responsive, targeting 16:9.**
   It has to look right on a 2K display on someone else's machine, because the deliverable is a link.
 
@@ -108,11 +115,10 @@ The reason carries the weight, because most later questions are not literal matc
   No 4x4 matrix stack, no frustum or lookAt, no `w` component, no depth buffer, no render targets.
   That machinery exists in the previous TypeScript attempt because NotITG charts need models, proxies and render-to-texture, and none of those are in scope here.
 - **Draw order is a sort, not a depth buffer.**
-  OpenITG agrees: `NeedZBuffer()` returns true only when `bumpy` or `twirl` is active, so ITG itself runs without one almost always.
-- **The third dimension barely appears in the mod set, so it is never a per-note matrix.**
-  `GetZPos` is driven by `bumpy` alone, `GetRotationX` by `roll` alone, `GetRotationY` by `twirl` alone.
-  Everything else is X, Y, Z-rotation, zoom and alpha.
-  Corner transforms cover `roll` and `twirl` when a chart wants them, `bumpy`'s Z reads as a scale on the quad, and the perspective family shapes the field's corner transform rather than getting a projection of its own.
+  Sorting is sufficient while nothing has to genuinely intersect, and it keeps the draw layer at one buffer and one state.
+- **Depth is faked on the quad, never given a per-note matrix.**
+  Four corners already buy foreshortening, tumbling and arrows shrinking away down the field, which is everything depth would visibly give at this scale.
+  A real depth buffer only earns its place when things must occlude each other correctly, and nothing planned does.
 
 ### Timing
 
