@@ -154,3 +154,73 @@ describe('effects', () => {
     expect(measure({ hallway: 1 })).toBeGreaterThan(1)
   })
 })
+
+describe('periodic mod knobs', () => {
+  const at = (seconds: number, set: Record<string, number>, column = 0, offset = 0) => {
+    const mods = new ModState([])
+    for (const [name, value] of Object.entries(set)) mods.override(name, value)
+    mods.update(0)
+    return place(mods, { beat: 0, seconds }, column, offset, 0, placement())
+  }
+  const sway = (seconds: number, set: Record<string, number>, column = 0, offset = 0) =>
+    at(seconds, { drunk: 1, ...set }, column, offset).x - (COLUMN_X[column] as number)
+
+  it('leaves a mod exactly where it was with every knob at rest', () => {
+    const rest = { drunk: 1, tipsy: 1, tornado: 1, bumpy: 1, beat: 1, wave: 1 }
+    const pinned = {
+      ...rest,
+      drunksize: 1,
+      drunkspeed: 1,
+      drunkperiod: 1,
+      drunkspacing: 1,
+      drunkoffset: 0,
+      tipsyspeed: 1,
+      tipsyspacing: 1,
+      tipsyoffset: 0,
+      tornadoperiod: 1,
+      tornadooffset: 0,
+      bumpysize: 1,
+      bumpyperiod: 1,
+      bumpyoffset: 0,
+      beatsize: 1,
+      beatmult: 1,
+      beatperiod: 1,
+      beatoffset: 0,
+      wavesize: 1,
+      waveperiod: 1,
+      waveoffset: 0,
+    }
+    for (let column = 0; column < 4; column++) {
+      for (const offset of [0, 0.5, 3, 9]) {
+        expect(at(1.4, pinned, column, offset)).toEqual(at(1.4, rest, column, offset))
+      }
+    }
+  })
+
+  it('scales the throw with size', () => {
+    expect(sway(0, {})).toBeCloseTo(0.5)
+    expect(sway(0, { drunksize: 2 })).toBeCloseTo(1)
+    expect(sway(0, { drunksize: 0 })).toBeCloseTo(0)
+  })
+
+  it('runs the wave faster with speed, and further along with period', () => {
+    expect(sway(1, { drunkspeed: 2 })).toBeCloseTo(sway(2, {}))
+    expect(sway(0, { drunkperiod: 2 }, 0, 1)).toBeCloseTo(sway(0, {}, 0, 2))
+  })
+
+  it('shifts the phase with offset and the column spread with spacing', () => {
+    expect(sway(0, { drunkoffset: Math.PI })).toBeCloseTo(-sway(0, {}))
+    expect(sway(0, {}, 2)).toBeCloseTo(sway(0, { drunkspacing: 2 }, 1))
+  })
+
+  it('beats twice as often at double mult', () => {
+    const kick = (beat: number, set: Record<string, number>) => {
+      const mods = new ModState([])
+      for (const [name, value] of Object.entries({ beat: 1, ...set })) mods.override(name, value)
+      mods.update(beat)
+      return place(mods, { beat, seconds: 0 }, 0, 0, 0, placement()).x - (COLUMN_X[0] as number)
+    }
+    expect(kick(0.1, { beatmult: 2 })).toBeCloseTo(kick(0.2, {}))
+    expect(kick(0.1, { beatsize: 2 })).toBeCloseTo(kick(0.1, {}) * 2)
+  })
+})
