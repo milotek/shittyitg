@@ -153,6 +153,22 @@ describe('effects', () => {
     expect(measure({ distant: 1 })).toBeLessThan(1)
     expect(measure({ hallway: 1 })).toBeGreaterThan(1)
   })
+
+  // These two carry a sideways shift as well, so they are checked by which way they lean rather
+  // than by the exact width: `space` recedes like `distant`, `incoming` comes at you like `hallway`.
+  it('leans space away and incoming toward, as their names say', () => {
+    const lean = (set: Record<string, number>) => {
+      const warp = fieldWarp(modsWith(set))
+      const out = new Float32Array(4)
+      warp(-0.5, 3, 0, out, 0)
+      warp(0.5, 3, 0, out, 2)
+      return (out[2] as number) - (out[0] as number)
+    }
+    expect(lean({ space: 1 })).toBeLessThan(1)
+    expect(lean({ incoming: 1 })).toBeGreaterThan(1)
+    expect(lean({ space: 1 })).toBeCloseTo(lean({ distant: 1, skew: 1 }))
+    expect(lean({ incoming: 1 })).toBeCloseTo(lean({ hallway: 1, skew: 1 }))
+  })
 })
 
 describe('periodic mod knobs', () => {
