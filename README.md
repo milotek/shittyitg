@@ -32,8 +32,10 @@ Reconverting never touches an existing `mods.json`, so a modchart survives new s
 A modchart is `public/songs/<slug>/mods.json`: rows of `{ beat, len, ease, set }`, the Mirin Template's shape.
 Values are percentages, except `xmod` and `cmod`, which are a multiplier and a BPM, and the rotation mods, which are degrees.
 A chart is written by hand, and `ftw`'s is the worked example.
-It follows the original NotITG modchart's structure: its section boundaries, its recurring gestures and its beats.
-The magnitudes are this engine's own, because the mod formulas here work in arrow cells and a percentage does not mean what it meant in ITG.
+It follows the original NotITG modchart: its sections, its recurring four-beat phrase, and the beats its hits land on.
+Magnitudes are the original's own, because the mod formulas here are ITG's worked in arrow cells rather than in its 640-wide screen, so a percentage means what it meant there.
+The eases are not: the original can only walk a mod towards a target at a fixed rate, where a row here can say `bell`, `pop` or `tap` and be a whole gesture.
+Those leave their starting value and return to it, so two of them overlapping on one mod leaves a residue that never clears, and a group of them wants closing out by hand.
 
 ## Rebuilding assets
 

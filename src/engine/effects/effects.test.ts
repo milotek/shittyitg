@@ -129,6 +129,12 @@ describe('effects', () => {
     expect(after.alpha).toBe(1)
   })
 
+  it('part of a stealth leaves part of an arrow, where a fade would have cut it', () => {
+    const half = placement()
+    visibility(modsWith({ stealth: 0.5 }), 0, 2, half)
+    expect(half.alpha).toBeCloseTo(0.5)
+  })
+
   it('drunk sways by at most half a cell', () => {
     const mods = modsWith({ drunk: 1 })
     for (let offset = 0; offset < FIELD_HEIGHT; offset += 0.1) {
