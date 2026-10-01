@@ -68,3 +68,28 @@ describe('mod tracks', () => {
     expect(state.column('reverse', 1)).toBe(0.5)
   })
 })
+
+describe('mod names', () => {
+  const build = (set: Record<string, number>) =>
+    buildTracks([{ beat: 0, len: 1, ease: 'linear', set }])
+
+  it('rejects a mod nothing answers to', () => {
+    expect(() => build({ drunkk: 100 })).toThrow('unknown mod "drunkk"')
+    expect(() => build({ hiddenoffest: 50 })).toThrow('unknown mod "hiddenoffest"')
+  })
+
+  it('rejects a column variant of a mod that does not take one', () => {
+    expect(() => build({ beat2: 100 })).toThrow('unknown mod "beat2"')
+  })
+
+  it('rejects a column the field does not have', () => {
+    expect(() => build({ drunk4: 100 })).toThrow('unknown mod "drunk4"')
+    expect(() => build({ drunk3: 100 })).not.toThrow()
+  })
+
+  it('keeps a column variant in its base mod unit', () => {
+    const tracks = build({ confusionoffset2: 90, drunk2: 50 })
+    expect(read(tracks.get('confusionoffset2') as never, 1)).toBe(90)
+    expect(read(tracks.get('drunk2') as never, 1)).toBeCloseTo(0.5)
+  })
+})

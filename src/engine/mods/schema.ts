@@ -1,8 +1,8 @@
 import type { EaseName } from './ease.ts'
 
 /**
- * The Mirin Template's row shape. Values are percentages, as modders write them, except for the
- * mods listed in `RAW_UNITS`, whose natural unit is already the number a person would type.
+ * The Mirin Template's row shape. Values are in each mod's own unit, as `registry.ts` declares it:
+ * a percentage for most, degrees for the rotations, and its own number for `xmod` and `cmod`.
  */
 export type ModRow = {
   beat: number
@@ -14,19 +14,3 @@ export type ModRow = {
 export type ModsFile = {
   rows: ModRow[]
 }
-
-/** Degrees and multipliers are typed as themselves; everything else is a percentage. */
-export const RAW_UNITS = new Set([
-  'xmod',
-  'cmod',
-  'confusionoffset',
-  'confusionoffset0',
-  'confusionoffset1',
-  'confusionoffset2',
-  'confusionoffset3',
-  'rotationx',
-  'rotationy',
-  'rotationz',
-])
-
-export const REST: Record<string, number> = { xmod: 1 }
