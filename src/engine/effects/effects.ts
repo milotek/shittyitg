@@ -155,6 +155,7 @@ export function place(
  */
 export function visibility(mods: ModState, column: number, offset: number, out: Placement): void {
   let visible = 1
+  let stealth = 0
   if (offset >= 0) {
     const sudden = mods.column('sudden', column)
     if (sudden !== 0) {
@@ -166,11 +167,14 @@ export function visibility(mods: ModState, column: number, offset: number, out: 
       const line = FADE_LINE * (1 + mods.get('hiddenoffset'))
       visible += hidden * clamp((offset - line) / FADE_WIDTH, -1, 0)
     }
-    visible -= mods.column('stealth', column)
+    stealth = clamp(mods.column('stealth', column), 0, 1)
   }
 
   visible = clamp(visible, 0, 1)
-  out.alpha = visible > 0.5 ? 1 : 0
+  // Stealth is a plain transparency rather than a fade, so it dims what the fades leave
+  // instead of being cut by them. A chart that sits on stealth 50% for a phrase wants
+  // half-lit arrows; through the cut it would get none at all.
+  out.alpha = (visible > 0.5 ? 1 : 0) * (1 - stealth)
   out.glow = clamp(1 - Math.abs(visible - 0.5) * 2, 0, 1) * (visible < 1 ? 1 : 0)
 }
 
