@@ -1,5 +1,6 @@
 import { EASES, type Ease } from './ease.ts'
-import { type ModRow, RAW_UNITS, REST } from './schema.ts'
+import { MODS, modOf } from './registry.ts'
+import type { ModRow } from './schema.ts'
 
 type Segment = {
   beat: number
@@ -28,9 +29,12 @@ export function buildTracks(rows: ModRow[]): Map<string, Track> {
     if (!ease) throw new Error(`unknown ease "${row.ease}" at beat ${row.beat}`)
 
     for (const [name, level] of Object.entries(row.set)) {
+      const mod = modOf(name)
+      if (!mod) throw new Error(`unknown mod "${name}" at beat ${row.beat}`)
+
       let track = tracks.get(name)
       if (!track) {
-        track = { rest: REST[name] ?? 0, segments: [] }
+        track = { rest: mod.rest, segments: [] }
         tracks.set(name, track)
       }
 
@@ -41,7 +45,7 @@ export function buildTracks(rows: ModRow[]): Map<string, Track> {
         last.after = from
       }
 
-      const to = RAW_UNITS.has(name) ? level : level / 100
+      const to = mod.unit === 'percent' ? level / 100 : level
       const end = row.beat + Math.max(row.len, 0)
       track.segments.push({
         beat: row.beat,
@@ -105,7 +109,7 @@ export class ModState {
   }
 
   get(name: string): number {
-    return this.#values.get(name) ?? REST[name] ?? 0
+    return this.#values.get(name) ?? MODS[name]?.rest ?? 0
   }
 
   /** A mod plus its per-column variant, so `reverse2` adds to `reverse` for column 2 only. */
