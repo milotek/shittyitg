@@ -15,7 +15,10 @@ npm test        # the engine maths
 npm run build   # a static site in dist/
 ```
 
-In a dev build, `?song=<slug>&at=<beat>` skips the wheel and starts a song partway through, and a panel in the corner pins any mod to a slider.
+`?song=<slug>&at=<beat>` skips the wheel and starts a song partway through, in any build.
+`?auto` plays the chart perfectly so a modchart can be watched rather than read, and `?cpu` puts a player on it instead, at a strength from `?cpu=0` to `?cpu=7`.
+Both leave the keyboard unbound and last for as long as the tab does, so the wheel still picks the song.
+In a dev build there is also a panel in the corner that pins any mod to a slider.
 
 ## Adding a song
 

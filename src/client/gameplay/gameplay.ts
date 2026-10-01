@@ -2,6 +2,7 @@ import { COLUMNS } from '../../engine/effects/field.ts'
 import { fieldWarp } from '../../engine/effects/warp.ts'
 import { ModState } from '../../engine/mods/track.ts'
 import type { Chart } from '../../engine/notes/notes.ts'
+import { AutoPlayer, type Skill } from '../../engine/play/auto.ts'
 import { Grade } from '../../engine/play/judge.ts'
 import { Play, type PlayEvent } from '../../engine/play/play.ts'
 import { NoteState } from '../../engine/play/state.ts'
@@ -40,6 +41,7 @@ export class Gameplay {
   readonly #flashes: (Flash | undefined)[] = new Array(COLUMNS).fill(undefined)
   readonly #holding: boolean[] = new Array(COLUMNS).fill(false)
   readonly #pressed: number[] = new Array(COLUMNS).fill(0)
+  #auto: AutoPlayer | undefined
   #stopFrames: (() => void) | undefined
   #unbind: (() => void) | undefined
   #consumed = 0
@@ -80,9 +82,10 @@ export class Gameplay {
 
   /**
    * Resolves once the song has played out or the player backs out with Escape. Starts from
-   * `fromBeat` only while inspecting a chart.
+   * `fromBeat` only while inspecting a chart. Given a `skill`, nobody is at the keyboard: the
+   * chart plays itself at that strength and the input stays unbound.
    */
-  async play(fromBeat = 0): Promise<void> {
+  async play(fromBeat = 0, skill?: Skill): Promise<void> {
     const { base, manifest } = this.#song
     await Promise.all([
       this.audio.load(base + manifest.audio),
@@ -90,17 +93,28 @@ export class Gameplay {
     ])
     this.#hud.reset()
     this.#stage.show(this.#background, this.#field, this.#hud)
+    this.#auto = skill
+      ? new AutoPlayer(
+          this.#chart.notes,
+          this.#seconds,
+          (b) => this.#timing.secondAt(b),
+          COLUMNS,
+          skill,
+        )
+      : undefined
     this.#stopFrames = this.#stage.every(() => this.#frame())
-    const unbindPlay = bindInput(
-      (column, stamp) => this.#play.press(column, this.audio.at(stamp)),
-      (column, stamp) => this.#play.release(column, this.audio.at(stamp)),
-    )
+    const unbindPlay = skill
+      ? undefined
+      : bindInput(
+          (column, stamp) => this.#play.press(column, this.audio.at(stamp)),
+          (column, stamp) => this.#play.release(column, this.audio.at(stamp)),
+        )
     const onEscape = (event: KeyboardEvent) => {
       if (event.code === 'Escape') this.#end()
     }
     addEventListener('keydown', onEscape)
     this.#unbind = () => {
-      unbindPlay()
+      unbindPlay?.()
       removeEventListener('keydown', onEscape)
     }
     const done = new Promise<void>((resolve) => {
@@ -123,6 +137,12 @@ export class Gameplay {
   #frame(): void {
     const seconds = this.audio.timeSeconds()
     const beat = this.#timing.beatAt(seconds)
+    // Before the update, so a note due this frame is pressed rather than already missed.
+    this.#auto?.step(
+      seconds,
+      (column, at) => this.#play.press(column, at),
+      (column, at) => this.#play.release(column, at),
+    )
     this.#play.update(seconds)
     this.#consume()
     this.#mods.update(beat)
