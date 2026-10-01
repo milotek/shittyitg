@@ -21,6 +21,25 @@ const DEGREE = Math.PI / 180
 const ACCEL_LIMIT = FIELD_HEIGHT * (5 / 6)
 
 /**
+ * What each periodic mod does at 100% with its knobs left alone: how far it throws an arrow, in
+ * cells, and how fast its wave runs. Every knob scales one of these rather than replacing it, so a
+ * chart that never names a knob gets the shape the mod has always had.
+ */
+const DRUNK_SWAY = 0.5
+const DRUNK_SPREAD = 0.2
+const DRUNK_WAVES = 10
+const TIPSY_LIFT = 0.4
+const TIPSY_RATE = 1.2
+const TIPSY_SPREAD = 1.8
+const TORNADO_WAVES = 6
+const BUMPY_DEPTH = 0.625
+const BUMPY_WAVES = 4
+const BEAT_THROW = 0.3125
+const BEAT_WAVES = 4.27
+const WAVE_THROW = 0.3125
+const WAVE_WAVES = 1 / 0.6
+
+/**
  * How far an arrow still has to travel before it reaches its receptor, in cells. Positive means
  * not yet arrived. At 1x an arrow covers one cell per beat. Acceleration mods only act on the way
  * in, so everything past the receptors keeps moving at the plain rate.
@@ -53,7 +72,13 @@ export function scrollOffset(
   }
 
   const wave = mods.get('wave')
-  if (wave !== 0) adjust += wave * 0.3125 * Math.sin(offset / 0.6)
+  if (wave !== 0) {
+    adjust +=
+      wave *
+      WAVE_THROW *
+      mods.get('wavesize') *
+      Math.sin(offset * WAVE_WAVES * mods.get('waveperiod') + mods.get('waveoffset'))
+  }
 
   return offset + adjust
 }
@@ -97,7 +122,16 @@ export function place(
 
   const drunk = mods.column('drunk', column)
   if (drunk !== 0) {
-    x += drunk * 0.5 * Math.cos(time + column * 0.2 + (offset * 10) / FIELD_HEIGHT)
+    x +=
+      drunk *
+      DRUNK_SWAY *
+      mods.get('drunksize') *
+      Math.cos(
+        time * mods.get('drunkspeed') +
+          column * DRUNK_SPREAD * mods.get('drunkspacing') +
+          (offset * DRUNK_WAVES * mods.get('drunkperiod')) / FIELD_HEIGHT +
+          mods.get('drunkoffset'),
+      )
   }
 
   const tornado = mods.column('tornado', column)
@@ -107,7 +141,10 @@ export function place(
     const minX = COLUMN_X[low] as number
     const maxX = COLUMN_X[high] as number
     const between = ((base - minX) / (maxX - minX)) * 2 - 1
-    const angle = Math.acos(clamp(between, -1, 1)) + (offset * 6) / FIELD_HEIGHT
+    const angle =
+      Math.acos(clamp(between, -1, 1)) +
+      (offset * TORNADO_WAVES * mods.get('tornadoperiod')) / FIELD_HEIGHT +
+      mods.get('tornadooffset')
     x += (minX + ((Math.cos(angle) + 1) / 2) * (maxX - minX) - base) * tornado
   }
 
@@ -118,16 +155,39 @@ export function place(
   if (invert !== 0) x += ((COLUMN_X[column ^ 1] as number) - base) * invert
 
   const beat = mods.get('beat')
-  if (beat !== 0) x += beat * beatPulse(song.beat) * Math.cos(offset * 4.27)
+  if (beat !== 0) {
+    const pulse = beatPulse(song.beat * mods.get('beatmult') + mods.get('beatoffset'))
+    x +=
+      beat *
+      BEAT_THROW *
+      mods.get('beatsize') *
+      pulse *
+      Math.cos(offset * BEAT_WAVES * mods.get('beatperiod'))
+  }
 
   x += mods.column('movex', column)
   y += mods.column('movey', column)
 
   const tipsy = mods.column('tipsy', column)
-  if (tipsy !== 0) y += tipsy * 0.4 * Math.cos(time * 1.2 + column * 1.8)
+  if (tipsy !== 0) {
+    y +=
+      tipsy *
+      TIPSY_LIFT *
+      Math.cos(
+        time * TIPSY_RATE * mods.get('tipsyspeed') +
+          column * TIPSY_SPREAD * mods.get('tipsyspacing') +
+          mods.get('tipsyoffset'),
+      )
+  }
 
   const bumpy = mods.column('bumpy', column)
-  if (bumpy !== 0) z += bumpy * 0.625 * Math.sin(offset * 4)
+  if (bumpy !== 0) {
+    z +=
+      bumpy *
+      BUMPY_DEPTH *
+      mods.get('bumpysize') *
+      Math.sin(offset * BUMPY_WAVES * mods.get('bumpyperiod') + mods.get('bumpyoffset'))
+  }
   z += mods.column('movez', column)
 
   const zoom = Math.max(1 - mods.column('mini', column) * 0.5, 0.01)
@@ -183,8 +243,8 @@ export function receptorAlpha(mods: ModState, column: number): number {
 }
 
 /**
- * The beat mod's kick: a sharp throw on each beat that settles by the half, alternating sides.
- * Quick attack, eased release, so it reads as a hit rather than a wobble.
+ * The beat mod's kick, as a share of its full throw: a sharp rise on each beat that settles by the
+ * half, alternating sides. Quick attack, eased release, so it reads as a hit rather than a wobble.
  */
 function beatPulse(songBeat: number): number {
   const attack = 0.2
@@ -195,7 +255,7 @@ function beatPulse(songBeat: number): number {
   if (within >= length) return 0
   const amount =
     within < attack ? (within / attack) ** 2 : 1 - ((within - attack) / (length - attack)) ** 2
-  return 0.3125 * amount * (Math.floor(phase) % 2 === 0 ? 1 : -1)
+  return amount * (Math.floor(phase) % 2 === 0 ? 1 : -1)
 }
 
 function clamp(value: number, low: number, high: number): number {

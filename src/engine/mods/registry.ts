@@ -17,6 +17,18 @@ export type Mod = {
 const wholeField = (unit: Unit = 'percent', rest = 0): Mod => ({ unit, rest, columns: false })
 const perColumn = (unit: Unit = 'percent', rest = 0): Mod => ({ unit, rest, columns: true })
 
+/** What each knob reads when a chart leaves it alone: a phase shifts by nothing, the rest scale by one. */
+const KNOB_REST = { size: 1, speed: 1, period: 1, spacing: 1, mult: 1, offset: 0 } as const
+type Knob = keyof typeof KNOB_REST
+
+/**
+ * The knobs NotITG hangs off a periodic mod, each a percentage of the shape that mod has with them
+ * left alone. A chart that never names one therefore gets exactly the behaviour it had before the
+ * knob existed, which is what lets them be bolted onto mods charts already use.
+ */
+const knobs = (mod: string, ...names: Knob[]): Record<string, Mod> =>
+  Object.fromEntries(names.map((name) => [`${mod}${name}`, wholeField('percent', KNOB_REST[name])]))
+
 /**
  * Every mod a chart may name, declared once. Nothing else keeps a list: the unit conversion, the
  * resting value, which names take a column suffix and the dev panel's menu all read from here, so
@@ -39,11 +51,17 @@ export const MODS: Record<string, Mod> = {
   invert: wholeField(),
 
   drunk: perColumn(),
+  ...knobs('drunk', 'size', 'speed', 'period', 'spacing', 'offset'),
   tipsy: perColumn(),
+  ...knobs('tipsy', 'speed', 'spacing', 'offset'),
   tornado: perColumn(),
+  ...knobs('tornado', 'period', 'offset'),
   bumpy: perColumn(),
+  ...knobs('bumpy', 'size', 'period', 'offset'),
   beat: wholeField(),
+  ...knobs('beat', 'size', 'mult', 'period', 'offset'),
   wave: wholeField(),
+  ...knobs('wave', 'size', 'period', 'offset'),
   boost: wholeField(),
   brake: wholeField(),
 
