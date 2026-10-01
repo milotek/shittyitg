@@ -153,6 +153,7 @@ export class Gameplay {
 
     const { width, height } = this.#stage
     this.#background.layout(width, height)
+    this.#background.dim(this.#mods.get('cover'))
     const cell = this.#field.layout(width, height)
     this.#hud.layout(cell, width, height)
     this.#hud.update(seconds, this.#play.combo)

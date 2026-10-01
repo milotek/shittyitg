@@ -73,6 +73,7 @@ export const MODS: Record<string, Mod> = {
 
   stealth: perColumn(),
   dark: perColumn(),
+  cover: wholeField(),
   sudden: perColumn(),
   suddenoffset: wholeField(),
   hidden: perColumn(),
