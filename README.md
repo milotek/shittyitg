@@ -31,7 +31,9 @@ Reconverting never touches an existing `mods.json`, so a modchart survives new s
 
 A modchart is `public/songs/<slug>/mods.json`: rows of `{ beat, len, ease, set }`, the Mirin Template's shape.
 Values are percentages, except `xmod` and `cmod`, which are a multiplier and a BPM, and the rotation mods, which are degrees.
-A chart can be written by hand or generated; `ftw`'s comes from `node src/tools/charts/ftw.ts`, which writes its `mods.json`.
+A chart is written by hand, and `ftw`'s is the worked example.
+It follows the original NotITG modchart's structure: its section boundaries, its recurring gestures and its beats.
+The magnitudes are this engine's own, because the mod formulas here work in arrow cells and a percentage does not mean what it meant in ITG.
 
 ## Rebuilding assets
 

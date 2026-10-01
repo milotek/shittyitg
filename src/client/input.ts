@@ -1,13 +1,17 @@
-/** Arrows for one hand on a keyboard, DFJK for two. Either set drives the same four columns. */
+/** Arrows for one hand on a keyboard, ZX./ or WASD for the other. Any set drives the same four columns. */
 const KEYS: Record<string, number> = {
   ArrowLeft: 0,
   ArrowDown: 1,
   ArrowUp: 2,
   ArrowRight: 3,
-  KeyD: 0,
-  KeyF: 1,
-  KeyJ: 2,
-  KeyK: 3,
+  KeyZ: 0,
+  KeyX: 1,
+  Period: 2,
+  Slash: 3,
+  KeyA: 0,
+  KeyS: 1,
+  KeyW: 2,
+  KeyD: 3,
 }
 
 /**
