@@ -104,13 +104,15 @@ export function scrollOffset(
 
 /**
  * The share of the way each column is toward the bottom. The pattern mods fold back past 100% so
- * stacking them bounces between up and down rather than overshooting.
+ * stacking them bounces between up and down rather than overshooting, which makes 130% reverse read
+ * as 70%. `reversetype` turns the fold off for a chart that wants to scroll straight past it.
  */
 export function reversal(mods: ModState, column: number): number {
   let r = mods.column('reverse', column)
   if (column >= COLUMNS / 2) r += mods.get('split')
   if (column % 2 === 1) r += mods.get('alternate')
   if (column > 0 && column < COLUMNS - 1) r += mods.get('cross')
+  if (mods.get('reversetype') > 0.5) return r
   r = ((r % 2) + 2) % 2
   return r > 1 ? 2 - r : r
 }
