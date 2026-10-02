@@ -164,7 +164,12 @@ export class Gameplay {
         secondAt: (b) => this.#timing.secondAt(b),
       },
       mods: this.#mods,
-      song: { beat, seconds },
+      song: {
+        beat,
+        seconds,
+        bps: this.#timing.beatsPerSecondAt(beat),
+        peakBpm: this.#timing.peakBpm,
+      },
       state: this.#play.state,
       pressed: this.#pressed,
       flashes: this.#flashes,

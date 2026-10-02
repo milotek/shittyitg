@@ -39,6 +39,7 @@ const knobs = (mod: string, ...names: Knob[]): Record<string, Mod> =>
 export const MODS: Record<string, Mod> = {
   xmod: wholeField('raw', 1),
   cmod: wholeField('raw'),
+  mmod: wholeField('raw'),
 
   reverse: perColumn(),
   split: wholeField(),
