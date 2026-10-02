@@ -9,6 +9,7 @@ import {
   RECEPTOR_Y,
   REVERSE_RECEPTOR_Y,
 } from './field.ts'
+import { perspectiveTilt } from './warp.ts'
 
 export type SongPosition = {
   beat: number
@@ -19,6 +20,9 @@ const DEGREE = Math.PI / 180
 
 /** Acceleration mods move an arrow at most this far, however hard they are pushed. */
 const ACCEL_LIMIT = FIELD_HEIGHT * (5 / 6)
+
+/** Cells the acceleration mods gain to work over for each unit of tilt, as the field leans away. */
+const TILT_REACH = 3.125
 
 /**
  * What each periodic mod does at 100% with its knobs left alone: how far it throws an arrow, in
@@ -51,24 +55,28 @@ export function scrollOffset(
   noteSeconds: number,
 ): number {
   const cmod = mods.get('cmod')
-  const offset =
-    cmod > 0
-      ? ((noteSeconds - song.seconds) * cmod) / 60
-      : (noteBeat - song.beat) * mods.get('xmod')
-  if (offset < 0) return offset
+  const speed = mods.get('xmod')
+  // The acceleration mods shape the plain scroll and the speed multiplies what they produce, which
+  // is the order ITG works in. At 2x a boost therefore covers twice the ground rather than bending
+  // twice as hard, and wave keeps its wavelength in beats instead of in cells.
+  const plain = cmod > 0 ? ((noteSeconds - song.seconds) * cmod) / 60 : noteBeat - song.beat
+  if (plain < 0) return plain * speed
 
+  // Tipping the field away spreads the same arrows over more of it, so the distance the
+  // acceleration mods work over grows to match.
+  const reach = FIELD_HEIGHT + Math.abs(perspectiveTilt(mods)) * TILT_REACH
   let adjust = 0
 
   const boost = mods.get('boost')
   if (boost !== 0) {
-    const moved = (offset * 1.5) / ((offset + FIELD_HEIGHT / 1.2) / FIELD_HEIGHT)
-    adjust += clamp(boost * (moved - offset), -ACCEL_LIMIT, ACCEL_LIMIT)
+    const moved = (plain * 1.5) / ((plain + reach / 1.2) / reach)
+    adjust += clamp(boost * (moved - plain), -ACCEL_LIMIT, ACCEL_LIMIT)
   }
 
   const brake = mods.get('brake')
   if (brake !== 0) {
-    const moved = offset * Math.min(offset / FIELD_HEIGHT, 1)
-    adjust += clamp(brake * (moved - offset), -ACCEL_LIMIT, ACCEL_LIMIT)
+    const moved = (plain * plain) / reach
+    adjust += clamp(brake * (moved - plain), -ACCEL_LIMIT, ACCEL_LIMIT)
   }
 
   const wave = mods.get('wave')
@@ -77,10 +85,10 @@ export function scrollOffset(
       wave *
       WAVE_THROW *
       mods.get('wavesize') *
-      Math.sin(offset * WAVE_WAVES * mods.get('waveperiod') + mods.get('waveoffset'))
+      Math.sin(plain * WAVE_WAVES * mods.get('waveperiod') + mods.get('waveoffset'))
   }
 
-  return offset + adjust
+  return (plain + adjust) * speed
 }
 
 /**
