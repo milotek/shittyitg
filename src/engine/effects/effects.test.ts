@@ -281,3 +281,21 @@ describe('appearance mods', () => {
     expect(seen({}, 3).glow).toBe(0)
   })
 })
+
+describe('mini and tiny', () => {
+  it('shrinks the field with mini and only the arrow with tiny', () => {
+    const small = placed(modsWith({ mini: 1 }), 3, 4)
+    expect(small.scaleX).toBeCloseTo(0.5)
+    expect(small.x).toBeCloseTo((COLUMN_X[3] as number) * 0.5)
+
+    const thin = placed(modsWith({ tiny: 1 }), 3, 4)
+    expect(thin.scaleX).toBeCloseTo(0.5)
+    expect(thin.x).toBeCloseTo(COLUMN_X[3] as number)
+    expect(thin.y).toBeCloseTo(placed(modsWith({}), 3, 4).y)
+  })
+
+  it('turns the field through itself past 200% mini', () => {
+    expect(placed(modsWith({ mini: 3 }), 3, 4).scaleX).toBeCloseTo(-0.5)
+    expect(placed(modsWith({ mini: 2 }), 3, 4).scaleX).toBe(0.01)
+  })
+})
