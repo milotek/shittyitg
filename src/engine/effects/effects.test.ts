@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { placement } from '../draw/quad.ts'
 import { ModState } from '../mods/track.ts'
-import { place, receptorAlpha, scrollOffset, visibility } from './effects.ts'
+import { place, receptorAlpha, reversal, scrollOffset, visibility } from './effects.ts'
 import {
   COLUMN_X,
   FADE_LINE,
@@ -118,6 +118,11 @@ describe('effects', () => {
   it('flip mirrors the columns and invert swaps within each half', () => {
     expect(placed(modsWith({ flip: 1 }), 0, 1).x).toBeCloseTo(COLUMN_X[3])
     expect(placed(modsWith({ invert: 1 }), 2, 1).x).toBeCloseTo(COLUMN_X[3])
+  })
+
+  it('folds reverse past 100% unless reversetype says not to', () => {
+    expect(reversal(modsWith({ reverse: 1.3 }), 0)).toBeCloseTo(0.7)
+    expect(reversal(modsWith({ reverse: 1.3, reversetype: 1 }), 0)).toBeCloseTo(1.3)
   })
 
   it('reverses only the columns a pattern mod names', () => {

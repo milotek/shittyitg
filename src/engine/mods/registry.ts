@@ -45,6 +45,7 @@ export const MODS: Record<string, Mod> = {
   alternate: wholeField(),
   cross: wholeField(),
   centered: wholeField(),
+  reversetype: wholeField(),
 
   mini: perColumn(),
   tiny: perColumn(),
