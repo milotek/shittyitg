@@ -28,6 +28,10 @@ const TILT_REACH = 3.125
  * What each periodic mod does at 100% with its knobs left alone: how far it throws an arrow, in
  * cells, and how fast its wave runs. Every knob scales one of these rather than replacing it, so a
  * chart that never names a knob gets the shape the mod has always had.
+ *
+ * Where a value is ITG's own it is written as the division that produced it. ITG measures in pixels
+ * at 64 to the cell, so its `sin(y / 38)` for wave is 64/38 waves per cell here, and a decimal
+ * rounded off that division would be a number nobody could check against the source.
  */
 const DRUNK_SWAY = 0.5
 const DRUNK_SPREAD = 0.2
@@ -39,9 +43,9 @@ const TORNADO_WAVES = 6
 const BUMPY_DEPTH = 0.625
 const BUMPY_WAVES = 4
 const BEAT_THROW = 0.3125
-const BEAT_WAVES = 4.27
+const BEAT_WAVES = 64 / 15
 const WAVE_THROW = 0.3125
-const WAVE_WAVES = 1 / 0.6
+const WAVE_WAVES = 64 / 38
 
 /**
  * How far an arrow still has to travel before it reaches its receptor, in cells. Positive means
