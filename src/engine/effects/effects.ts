@@ -209,13 +209,16 @@ export function place(
   }
   z += mods.column('movez', column)
 
+  // `mini` shrinks the field and `tiny` shrinks only the arrow, so a position takes the first and
+  // the drawn size takes both. That is the whole difference between them.
   const zoom = fieldZoom(mods, column)
+  const size = zoom * Math.max(1 - mods.column('tiny', column) * 0.5, 0.01)
 
   out.x = x * zoom
   out.y = y * zoom
   out.depth = z * zoom
-  out.scaleX = zoom
-  out.scaleY = zoom
+  out.scaleX = size
+  out.scaleY = size
   out.rotX = mods.column('roll', column) * offset * 32 * DEGREE
   out.rotY = mods.column('twirl', column) * offset * 32 * DEGREE
   out.rotZ =
@@ -268,9 +271,14 @@ export function visibility(mods: ModState, column: number, offset: number, out: 
   out.glow = GLOW_PEAK * clamp(1 - Math.abs(visible - 0.5) * 2, 0, 1)
 }
 
-/** How far the field shrinks for a column. Positions scale with this as well as the arrows do. */
+/**
+ * How far the field shrinks for a column. Positions scale with this as well as the arrows do.
+ * Past 200% it goes negative and the field turns through itself, which is ITG's behaviour and a
+ * thing charts use; only the zero itself is guarded, because that is where the field vanishes.
+ */
 function fieldZoom(mods: ModState, column: number): number {
-  return Math.max(1 - mods.column('mini', column) * 0.5, 0.01)
+  const zoom = 1 - mods.column('mini', column) * 0.5
+  return Math.abs(zoom) < 0.01 ? 0.01 : zoom
 }
 
 export function receptorAlpha(mods: ModState, column: number): number {
