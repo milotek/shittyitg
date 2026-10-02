@@ -12,7 +12,9 @@ import {
 } from './field.ts'
 import { fieldWarp } from './warp.ts'
 
-const song = { beat: 12.25, seconds: 5.6 }
+/** The showpiece's own tempo, steady throughout. */
+const TEMPO = { bps: 130 / 60, peakBpm: 130 }
+const song = { beat: 12.25, seconds: 5.6, ...TEMPO }
 
 const modsWith = (set: Record<string, number>) => {
   const mods = new ModState([])
@@ -188,7 +190,7 @@ describe('periodic mod knobs', () => {
     const mods = new ModState([])
     for (const [name, value] of Object.entries(set)) mods.override(name, value)
     mods.update(0)
-    return place(mods, { beat: 0, seconds }, column, offset, 0, placement())
+    return place(mods, { beat: 0, seconds, ...TEMPO }, column, offset, 0, placement())
   }
   const sway = (seconds: number, set: Record<string, number>, column = 0, offset = 0) =>
     at(seconds, { drunk: 1, ...set }, column, offset).x - (COLUMN_X[column] as number)
@@ -246,7 +248,10 @@ describe('periodic mod knobs', () => {
       const mods = new ModState([])
       for (const [name, value] of Object.entries({ beat: 1, ...set })) mods.override(name, value)
       mods.update(beat)
-      return place(mods, { beat, seconds: 0 }, 0, 0, 0, placement()).x - (COLUMN_X[0] as number)
+      return (
+        place(mods, { beat, seconds: 0, ...TEMPO }, 0, 0, 0, placement()).x -
+        (COLUMN_X[0] as number)
+      )
     }
     expect(kick(0.1, { beatmult: 2 })).toBeCloseTo(kick(0.2, {}))
     expect(kick(0.1, { beatsize: 2 })).toBeCloseTo(kick(0.1, {}) * 2)
@@ -302,5 +307,30 @@ describe('mini and tiny', () => {
   it('turns the field through itself past 200% mini', () => {
     expect(placed(modsWith({ mini: 3 }), 3, 4).scaleX).toBeCloseTo(-0.5)
     expect(placed(modsWith({ mini: 2 }), 3, 4).scaleX).toBe(0.01)
+  })
+})
+
+describe('tempo-aware mods', () => {
+  it('resolves mmod to whatever multiplier reaches that speed', () => {
+    expect(scrollOffset(modsWith({ mmod: 260 }), song, song.beat + 3, 0)).toBeCloseTo(6)
+    expect(scrollOffset(modsWith({ mmod: 65 }), song, song.beat + 3, 0)).toBeCloseTo(1.5)
+  })
+
+  it('lets mmod win over xmod, since it is choosing the same thing', () => {
+    expect(scrollOffset(modsWith({ mmod: 260, xmod: 9 }), song, song.beat + 3, 0)).toBeCloseTo(6)
+  })
+
+  // At 320 the divisor is two, which stretches the kick over two beats. Beat 1.1 lands inside the
+  // pulse at 130 and in the gap after it at 320.
+  it('stretches the beat kick on a fast song so it shakes rather than strobes', () => {
+    const kick = (bps: number) => {
+      const mods = modsWith({ beat: 1 })
+      return (
+        place(mods, { beat: 1.1, seconds: 0, bps, peakBpm: bps * 60 }, 0, 0, 0, placement()).x -
+        (COLUMN_X[0] as number)
+      )
+    }
+    expect(kick(130 / 60)).not.toBeCloseTo(0)
+    expect(kick(320 / 60)).toBe(0)
   })
 })

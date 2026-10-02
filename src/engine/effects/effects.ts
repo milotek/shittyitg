@@ -14,6 +14,10 @@ import { perspectiveTilt } from './warp.ts'
 export type SongPosition = {
   beat: number
   seconds: number
+  /** Beats per second here, which the beat mod slows itself against on a fast song. */
+  bps: number
+  /** The fastest the song ever gets, which is what `mmod` scales the scroll against. */
+  peakBpm: number
 }
 
 const DEGREE = Math.PI / 180
@@ -50,6 +54,10 @@ const TORNADO_WAVES = 6
 const BUMPY_DEPTH = 0.625
 const BUMPY_WAVES = 4
 const BEAT_THROW = 0.3125
+const BEAT_ATTACK = 0.2
+const BEAT_LENGTH = 0.5
+/** Past this the beat mod halves its own rate again, so a fast song shakes rather than strobes. */
+const BEAT_SLOW_ABOVE_BPM = 150
 const BEAT_WAVES = 64 / 15
 const WAVE_THROW = 0.3125
 const WAVE_WAVES = 64 / 38
@@ -66,7 +74,10 @@ export function scrollOffset(
   noteSeconds: number,
 ): number {
   const cmod = mods.get('cmod')
-  const speed = mods.get('xmod')
+  // `mmod` names the speed the song's fastest stretch should read at, so it resolves to whatever
+  // multiplier gets there: m600 on a song that peaks at 150 is 4x.
+  const mmod = mods.get('mmod')
+  const speed = mmod > 0 ? mmod / song.peakBpm : mods.get('xmod')
   // The acceleration mods shape the plain scroll and the speed multiplies what they produce, which
   // is the order ITG works in. At 2x a boost therefore covers twice the ground rather than bending
   // twice as hard, and wave keeps its wavelength in beats instead of in cells.
@@ -177,7 +188,8 @@ export function place(
 
   const beat = mods.get('beat')
   if (beat !== 0) {
-    const pulse = beatPulse(song.beat * mods.get('beatmult') + mods.get('beatoffset'))
+    const divide = Math.max(1, Math.trunc((song.bps * 60) / BEAT_SLOW_ABOVE_BPM))
+    const pulse = beatPulse(song.beat * mods.get('beatmult') + mods.get('beatoffset'), divide)
     x +=
       beat *
       BEAT_THROW *
@@ -290,11 +302,15 @@ export function receptorAlpha(mods: ModState, column: number): number {
 /**
  * The beat mod's kick, as a share of its full throw: a sharp rise on each beat that settles by the
  * half, alternating sides. Quick attack, eased release, so it reads as a hit rather than a wobble.
+ *
+ * `divide` stretches the whole gesture over that many beats. ITG raises it on a fast song so the
+ * kick stays legible instead of blurring into a vibration; `beatmult` is the knob for asking
+ * directly, and this is the floor under it.
  */
-function beatPulse(songBeat: number): number {
-  const attack = 0.2
-  const length = 0.5
-  const phase = songBeat + attack
+function beatPulse(songBeat: number, divide: number): number {
+  const attack = BEAT_ATTACK / divide
+  const length = BEAT_LENGTH / divide
+  const phase = (songBeat + attack) / divide
   if (phase < 0) return 0
   const within = phase - Math.floor(phase)
   if (within >= length) return 0
