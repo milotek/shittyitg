@@ -77,7 +77,7 @@ export function drawField(list: DrawList, frame: FieldFrame): void {
     if (offset < DRAW_BEHIND || offset > DRAW_AHEAD) continue
 
     place(frame.mods, song, note.column, offset, holding ? 0 : ahead, spot)
-    visibility(frame.mods, note.column, offset, spot)
+    visibility(frame.mods, song, note.column, offset, spot)
     drawNote(list, frame, note, offset, spot)
   }
 }
@@ -317,7 +317,7 @@ function edgePair(
   const half = (width / 2) * edge.scaleX
   warp(edge.x - half, edge.y, edge.depth, out, at)
   warp(edge.x + half, edge.y, edge.depth, out, at + 2)
-  visibility(mods, note.column, near.offset, edge)
+  visibility(mods, song, note.column, near.offset, edge)
   const alpha = edge.alpha
   const glow = edge.glow
 

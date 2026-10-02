@@ -157,6 +157,7 @@ export class Gameplay {
     const cell = this.#field.layout(width, height)
     this.#hud.layout(cell, width, height)
     this.#hud.update(seconds, this.#play.combo)
+    this.#hud.container.visible = this.#mods.get('blind') <= 0.5
     this.#field.render({
       chart: {
         notes: this.#chart.notes,
@@ -181,6 +182,7 @@ export class Gameplay {
   }
 
   #consume(): void {
+    const blind = this.#mods.get('blind') > 0.5
     const events = this.#play.events
     for (; this.#consumed < events.length; this.#consumed++) {
       const event = events[this.#consumed]
@@ -188,7 +190,10 @@ export class Gameplay {
       if (event.kind === 'judgment') {
         this.#hud.judge(event.grade, event.at)
         const sprite = FLASH_SPRITE[event.grade]
-        if (sprite) this.#flashes[event.column] = { sprite, at: event.at, additive: false }
+        // Blind takes every scrap of feedback away, so a hit that would flash still flashes, but
+        // it flashes the best grade whatever it actually was.
+        const shown = blind ? FLASH_SPRITE[Grade.fantastic] : sprite
+        if (sprite) this.#flashes[event.column] = { sprite: shown, at: event.at, additive: false }
       } else if (event.kind === 'mine') {
         this.#flashes[event.column] = { sprite: 'flashMarvelous', at: event.at, additive: true }
       } else if (!event.held) {

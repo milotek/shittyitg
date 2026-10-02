@@ -35,6 +35,13 @@ const TILT_REACH = 3.125
  */
 const GLOW_PEAK = 1.3
 
+/** Radians a second the blink strobe runs at, and the steps ITG quantises it into. */
+const BLINK_RATE = 10
+const BLINK_STEP = 1 / 3
+
+/** How far either side of the fade line randomvanish reaches, in cells. */
+const VANISH_REACH = 1.25
+
 /**
  * What each periodic mod does at 100% with its knobs left alone: how far it throws an arrow, in
  * cells, and how fast its wave runs. Every knob scales one of these rather than replacing it, so a
@@ -273,7 +280,13 @@ export function place(
  * The cut is hard at half, and the glow peaks exactly there: an arrow flashes white as it
  * vanishes instead of dissolving, which is what makes the fade mods readable at speed.
  */
-export function visibility(mods: ModState, column: number, offset: number, out: Placement): void {
+export function visibility(
+  mods: ModState,
+  song: SongPosition,
+  column: number,
+  offset: number,
+  out: Placement,
+): void {
   let visible = 1
   let stealth = 0
 
@@ -285,7 +298,8 @@ export function visibility(mods: ModState, column: number, offset: number, out: 
   if (!past) {
     const sudden = mods.column('sudden', column)
     const hidden = mods.column('hidden', column)
-    if (sudden !== 0 || hidden !== 0) {
+    const vanish = mods.column('randomvanish', column)
+    if (sudden !== 0 || hidden !== 0 || vanish !== 0) {
       // Mini shrinks the field underneath the fades, so the line they cut on rides down with it.
       const centre = FADE_LINE / Math.abs(fieldZoom(mods, column))
       // Asking for both pushes them apart, so the lit strip they leave between them stays open.
@@ -298,6 +312,16 @@ export function visibility(mods: ModState, column: number, offset: number, out: 
         const line = centre * (1 + mods.get('hiddenoffset')) - apart
         visible += hidden * clamp((offset - line) / FADE_WIDTH, -1, 0)
       }
+      // Clears whatever is far from the fade line in either direction and takes what is near it,
+      // so arrows surface on the way in and again on the way out rather than fading once.
+      if (vanish !== 0) {
+        visible += vanish * ((Math.abs(offset - centre) - VANISH_REACH) / VANISH_REACH - 1)
+      }
+    }
+
+    const blink = mods.column('blink', column)
+    if (blink !== 0) {
+      visible += blink * (quantize(Math.sin(song.seconds * BLINK_RATE), BLINK_STEP) - 1)
     }
   }
 
@@ -345,4 +369,9 @@ function beatPulse(songBeat: number, divide: number): number {
 
 function clamp(value: number, low: number, high: number): number {
   return value < low ? low : value > high ? high : value
+}
+
+/** ITG's own rounding: toward zero rather than down, which is what makes the strobe uneven. */
+function quantize(value: number, step: number): number {
+  return Math.trunc((value + step / 2) / step) * step
 }

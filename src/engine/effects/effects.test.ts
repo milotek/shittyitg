@@ -90,8 +90,8 @@ describe('effects at rest', () => {
         )
         const a = placement()
         const b = placement()
-        visibility(zeroed, column, offset, a)
-        visibility(rest, column, offset, b)
+        visibility(zeroed, song, column, offset, a)
+        visibility(rest, song, column, offset, b)
         expect(a).toEqual(b)
       }
     }
@@ -99,7 +99,7 @@ describe('effects at rest', () => {
 
   it('leaves arrows fully visible and receptors lit', () => {
     const p = placement()
-    visibility(modsWith({}), 1, 3, p)
+    visibility(modsWith({}), song, 1, 3, p)
     expect([p.alpha, p.glow]).toEqual([1, 0])
     expect(receptorAlpha(modsWith({}), 1)).toBe(1)
   })
@@ -137,15 +137,15 @@ describe('effects', () => {
     const mods = modsWith({ stealth: 1 })
     const before = placement()
     const after = placement()
-    visibility(mods, 0, 2, before)
-    visibility(mods, 0, -0.5, after)
+    visibility(mods, song, 0, 2, before)
+    visibility(mods, song, 0, -0.5, after)
     expect(before.alpha).toBe(0)
     expect(after.alpha).toBe(1)
   })
 
   it('part of a stealth leaves part of an arrow, where a fade would have cut it', () => {
     const half = placement()
-    visibility(modsWith({ stealth: 0.5 }), 0, 2, half)
+    visibility(modsWith({ stealth: 0.5 }), song, 0, 2, half)
     expect(half.alpha).toBeCloseTo(0.5)
   })
 
@@ -259,9 +259,9 @@ describe('periodic mod knobs', () => {
 })
 
 describe('appearance mods', () => {
-  const seen = (set: Record<string, number>, offset: number, column = 0) => {
+  const seen = (set: Record<string, number>, offset: number, column = 0, seconds = 0) => {
     const out = placement()
-    visibility(modsWith(set), column, offset, out)
+    visibility(modsWith(set), { ...song, seconds }, column, offset, out)
     return out
   }
 
@@ -356,5 +356,33 @@ describe('expand and boomerang', () => {
   it('eases boomerang in by its level, which ITG cannot do', () => {
     const full = far({ boomerang: 1 }, 6)
     expect(far({ boomerang: 0.5 }, 6)).toBeCloseTo((6 + full) / 2)
+  })
+})
+
+describe('blink and randomvanish', () => {
+  const lit = (set: Record<string, number>, offset: number, seconds = 0) => {
+    const out = placement()
+    visibility(modsWith(set), { ...song, seconds }, 0, offset, out)
+    return out.alpha
+  }
+
+  // ITG steps the strobe in thirds and rounds toward zero, so the on and off spells are uneven.
+  it('strobes blink in steps rather than fading it', () => {
+    const over = Array.from({ length: 64 }, (_, i) => lit({ blink: 1 }, 3, i / 64))
+    expect(new Set(over)).toEqual(new Set([0, 1]))
+    expect(over.filter((a) => a === 1).length).toBeGreaterThan(0)
+    expect(over.filter((a) => a === 0).length).toBeGreaterThan(0)
+  })
+
+  it('leaves blink alone past the receptors', () => {
+    const over = Array.from({ length: 64 }, (_, i) => lit({ blink: 1 }, -0.5, i / 64))
+    expect(new Set(over)).toEqual(new Set([1]))
+  })
+
+  // It takes what sits on the fade line and clears what is well away from it on either side.
+  it('vanishes arrows crossing the fade line and returns them beyond it', () => {
+    expect(lit({ randomvanish: 1 }, FADE_LINE)).toBe(0)
+    expect(lit({ randomvanish: 1 }, FADE_LINE + 3)).toBe(1)
+    expect(lit({ randomvanish: 1 }, FADE_LINE - 2)).toBe(1)
   })
 })
