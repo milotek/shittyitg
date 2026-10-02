@@ -9,8 +9,6 @@ type Anchor = { beat: number; second: number; beatsPerSecond: number }
 
 export class Timing {
   readonly #anchors: Anchor[]
-  /** The fastest the song ever gets, which is what `mmod` scales the scroll against. */
-  readonly peakBpm: number
 
   constructor(data: TimingData) {
     const first = data.bpms[0]
@@ -41,14 +39,13 @@ export class Timing {
     }
 
     this.#anchors = anchors
-    this.peakBpm = Math.max(...anchors.map((a) => a.beatsPerSecond)) * 60
   }
 
   /**
    * A stop on a note's own beat happens after the note is hit, so the anchor is the last one
    * strictly before the beat and never includes a stop starting on it.
    */
-  #anchorBefore(beat: number): Anchor {
+  secondAt(beat: number): number {
     const anchors = this.#anchors
     let found = anchors[0] as Anchor
     let low = 0
@@ -63,16 +60,6 @@ export class Timing {
         high = mid - 1
       }
     }
-    return found
-  }
-
-  /** Zero through a stop, which is the honest answer and leaves the beat mod running at its base rate. */
-  beatsPerSecondAt(beat: number): number {
-    return this.#anchorBefore(beat).beatsPerSecond
-  }
-
-  secondAt(beat: number): number {
-    const found = this.#anchorBefore(beat)
     if (found.beatsPerSecond === 0) return found.second
     return found.second + (beat - found.beat) / found.beatsPerSecond
   }

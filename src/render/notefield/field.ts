@@ -73,11 +73,11 @@ export function drawField(list: DrawList, frame: FieldFrame): void {
     const holding = status === NoteState.holding
     const offset = holding
       ? 0
-      : scrollOffset(frame.mods, song, note.column, note.beat, chart.seconds[i] as number)
+      : scrollOffset(frame.mods, song, note.beat, chart.seconds[i] as number)
     if (offset < DRAW_BEHIND || offset > DRAW_AHEAD) continue
 
     place(frame.mods, song, note.column, offset, holding ? 0 : ahead, spot)
-    visibility(frame.mods, song, note.column, offset, spot)
+    visibility(frame.mods, note.column, offset, spot)
     drawNote(list, frame, note, offset, spot)
   }
 }
@@ -196,8 +196,7 @@ function drawHold(list: DrawList, frame: FieldFrame, note: Note, status: number)
   const to = Math.min(end, song.beat + LOOK_AHEAD)
   if (to <= from) return
 
-  const offsetAt = (beat: number) =>
-    scrollOffset(mods, song, note.column, beat, chart.secondAt(beat))
+  const offsetAt = (beat: number) => scrollOffset(mods, song, beat, chart.secondAt(beat))
   const tail = offsetAt(end)
 
   samples.length = 0
@@ -318,7 +317,7 @@ function edgePair(
   const half = (width / 2) * edge.scaleX
   warp(edge.x - half, edge.y, edge.depth, out, at)
   warp(edge.x + half, edge.y, edge.depth, out, at + 2)
-  visibility(mods, song, note.column, near.offset, edge)
+  visibility(mods, note.column, near.offset, edge)
   const alpha = edge.alpha
   const glow = edge.glow
 

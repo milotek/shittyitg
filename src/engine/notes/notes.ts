@@ -38,8 +38,7 @@ export type Manifest = {
   fixture?: true
 }
 
-/** StepMania's note grid. Anything landing between two rows is off the grid by definition. */
-export const ROWS_PER_BEAT = 48
+const ROWS_PER_BEAT = 48
 const QUANTS = [4, 8, 12, 16, 24, 32, 48, 64, 192]
 
 export function quantOf(beat: number): number {

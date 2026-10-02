@@ -1,5 +1,47 @@
-import { MODS } from '../engine/mods/registry.ts'
 import type { ModState } from '../engine/mods/track.ts'
+
+const MODS = [
+  'xmod',
+  'cmod',
+  'reverse',
+  'split',
+  'alternate',
+  'cross',
+  'centered',
+  'mini',
+  'flip',
+  'invert',
+  'drunk',
+  'tipsy',
+  'tornado',
+  'bumpy',
+  'beat',
+  'wave',
+  'boost',
+  'brake',
+  'dizzy',
+  'roll',
+  'twirl',
+  'confusion',
+  'confusionoffset',
+  'stealth',
+  'dark',
+  'sudden',
+  'hidden',
+  'movex',
+  'movey',
+  'movez',
+  'overhead',
+  'incoming',
+  'space',
+  'hallway',
+  'distant',
+  'tilt',
+  'skew',
+  'rotationx',
+  'rotationy',
+  'rotationz',
+]
 
 /** Engine units a slider covers, chosen so the full throw of each shows its whole character. */
 const RANGE: Record<string, [number, number]> = {
@@ -16,9 +58,7 @@ export function mountDevPanel(mods: ModState): () => void {
   const panel = document.createElement('form')
   panel.id = 'devpanel'
   panel.innerHTML = `
-    <select name="mod">${Object.keys(MODS)
-      .map((m) => `<option>${m}</option>`)
-      .join('')}</select>
+    <select name="mod">${MODS.map((m) => `<option>${m}</option>`).join('')}</select>
     <input name="level" type="range" step="any" />
     <output name="value"></output>
     <button name="reset" type="button">clear</button>

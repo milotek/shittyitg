@@ -14,35 +14,24 @@ const SKEW_CELLS = FIELD_HEIGHT * 0.4
 const NEAREST = CAMERA_DISTANCE * 0.1
 
 /**
- * How far the field leans back, as the perspective mods between them ask for it. Positive sends
- * the far end away. The acceleration mods read this too, because the distance they work over grows
- * as the field tips, which is how ITG keeps a boost from bunching up once the field is foreshortened.
- */
-export function perspectiveTilt(mods: ModState): number {
-  const flatten = 1 - mods.get('overhead')
-  return (
-    (mods.get('tilt') +
-      mods.get('distant') -
-      mods.get('hallway') -
-      mods.get('incoming') +
-      mods.get('space')) *
-    flatten
-  )
-}
-
-/**
  * The whole field's transform, standing in for a projection matrix. Each corner is turned about
  * the field's centre, then divided by its own depth, so an arrow leaning away gets a smaller far
  * edge. That per-corner divide is the only perspective in the engine, and it is why a four-corner
  * quad can tumble and foreshorten without a `w` component.
  *
  * The named perspective mods are corners of one (tilt, skew) square: `distant` sends the far end
- * away and `hallway` brings it toward you, `space` and `incoming` are those same two with the
- * vanishing point slid sideways, and `overhead` pulls everything back to flat.
+ * away, `hallway` brings it toward you, `incoming` and `space` are those two slid sideways, and
+ * `overhead` pulls everything back to flat.
  */
 export function fieldWarp(mods: ModState): Warp {
   const flatten = 1 - mods.get('overhead')
-  const tilt = perspectiveTilt(mods)
+  const tilt =
+    (mods.get('tilt') +
+      mods.get('distant') -
+      mods.get('hallway') +
+      mods.get('incoming') -
+      mods.get('space')) *
+    flatten
   const skew = (mods.get('skew') + mods.get('incoming') + mods.get('space')) * flatten
 
   const angleX = -tilt * TILT_ANGLE + mods.get('rotationx') * DEGREE
