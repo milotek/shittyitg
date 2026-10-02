@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { placement } from '../draw/quad.ts'
 import { ModState } from '../mods/track.ts'
 import { place, receptorAlpha, scrollOffset, visibility } from './effects.ts'
-import { COLUMN_X, FIELD_HEIGHT, RECEPTOR_Y, REVERSE_RECEPTOR_Y } from './field.ts'
+import {
+  COLUMN_X,
+  FADE_LINE,
+  FADE_WIDTH,
+  FIELD_HEIGHT,
+  RECEPTOR_Y,
+  REVERSE_RECEPTOR_Y,
+} from './field.ts'
 import { fieldWarp } from './warp.ts'
 
 const song = { beat: 12.25, seconds: 5.6 }
@@ -238,5 +245,39 @@ describe('periodic mod knobs', () => {
     }
     expect(kick(0.1, { beatmult: 2 })).toBeCloseTo(kick(0.2, {}))
     expect(kick(0.1, { beatsize: 2 })).toBeCloseTo(kick(0.1, {}) * 2)
+  })
+})
+
+describe('appearance mods', () => {
+  const seen = (set: Record<string, number>, offset: number, column = 0) => {
+    const out = placement()
+    visibility(modsWith(set), column, offset, out)
+    return out
+  }
+
+  it('rides the fade line down with mini', () => {
+    expect(seen({ hidden: 1 }, FADE_LINE).alpha).toBe(1)
+    // Half the field size puts the line at twice the distance, so the same arrow is now inside it.
+    expect(seen({ hidden: 1, mini: 1 }, FADE_LINE).alpha).toBe(0)
+  })
+
+  // Both fades share a line, so asking for both would close the lit strip entirely. ITG pushes
+  // them a quarter of a fade apart instead, and this offset falls in the gap that opens up.
+  it('holds the strip open when a chart asks for hidden and sudden together', () => {
+    const between = FADE_LINE - 0.625 * FADE_WIDTH
+    expect(seen({ hidden: 1 }, between).alpha).toBe(0)
+    expect(seen({ hidden: 1, sudden: 1 }, between).alpha).toBe(1)
+  })
+
+  it('keeps stealth past the receptors only when asked', () => {
+    expect(seen({ stealth: 1 }, -0.5).alpha).toBe(1)
+    expect(seen({ stealth: 1, stealthpastreceptors: 1 }, -0.5).alpha).toBe(0)
+  })
+
+  // Over one on purpose: the draw layer clamps it, so the excess widens the flashing band rather
+  // than brightening it, which is how a fade reads as a cut rather than a dissolve.
+  it('flashes past full as an arrow crosses a fade', () => {
+    expect(seen({ hidden: 1 }, FADE_LINE - FADE_WIDTH / 2).glow).toBeCloseTo(1.3)
+    expect(seen({}, 3).glow).toBe(0)
   })
 })
