@@ -25,6 +25,13 @@ const ACCEL_LIMIT = FIELD_HEIGHT * (5 / 6)
 const TILT_REACH = 3.125
 
 /**
+ * How hard an arrow flashes as a fade takes it. Over one on purpose: the draw layer clamps it, so
+ * the excess widens the band that flashes rather than brightening the flash, which is what makes a
+ * fade read as a cut at speed instead of a dissolve.
+ */
+const GLOW_PEAK = 1.3
+
+/**
  * What each periodic mod does at 100% with its knobs left alone: how far it throws an arrow, in
  * cells, and how fast its wave runs. Every knob scales one of these rather than replacing it, so a
  * chart that never names a knob gets the shape the mod has always had.
@@ -202,7 +209,7 @@ export function place(
   }
   z += mods.column('movez', column)
 
-  const zoom = Math.max(1 - mods.column('mini', column) * 0.5, 0.01)
+  const zoom = fieldZoom(mods, column)
 
   out.x = x * zoom
   out.y = y * zoom
@@ -228,18 +235,29 @@ export function place(
 export function visibility(mods: ModState, column: number, offset: number, out: Placement): void {
   let visible = 1
   let stealth = 0
-  if (offset >= 0) {
-    const sudden = mods.column('sudden', column)
-    if (sudden !== 0) {
-      const line = FADE_LINE * (1 + mods.get('suddenoffset'))
-      visible += sudden * clamp(-(offset - line) / FADE_WIDTH, -1, 0)
-    }
-    const hidden = mods.column('hidden', column)
-    if (hidden !== 0) {
-      const line = FADE_LINE * (1 + mods.get('hiddenoffset'))
-      visible += hidden * clamp((offset - line) / FADE_WIDTH, -1, 0)
-    }
+
+  const past = offset < 0
+  if (!past || mods.get('stealthpastreceptors') > 0.5) {
     stealth = clamp(mods.column('stealth', column), 0, 1)
+  }
+
+  if (!past) {
+    const sudden = mods.column('sudden', column)
+    const hidden = mods.column('hidden', column)
+    if (sudden !== 0 || hidden !== 0) {
+      // Mini shrinks the field underneath the fades, so the line they cut on rides down with it.
+      const centre = FADE_LINE / Math.abs(fieldZoom(mods, column))
+      // Asking for both pushes them apart, so the lit strip they leave between them stays open.
+      const apart = FADE_WIDTH * 0.25 * hidden * sudden
+      if (sudden !== 0) {
+        const line = centre * (1 + mods.get('suddenoffset')) + apart
+        visible += sudden * clamp(-(offset - line) / FADE_WIDTH, -1, 0)
+      }
+      if (hidden !== 0) {
+        const line = centre * (1 + mods.get('hiddenoffset')) - apart
+        visible += hidden * clamp((offset - line) / FADE_WIDTH, -1, 0)
+      }
+    }
   }
 
   visible = clamp(visible, 0, 1)
@@ -247,7 +265,12 @@ export function visibility(mods: ModState, column: number, offset: number, out: 
   // instead of being cut by them. A chart that sits on stealth 50% for a phrase wants
   // half-lit arrows; through the cut it would get none at all.
   out.alpha = (visible > 0.5 ? 1 : 0) * (1 - stealth)
-  out.glow = clamp(1 - Math.abs(visible - 0.5) * 2, 0, 1) * (visible < 1 ? 1 : 0)
+  out.glow = GLOW_PEAK * clamp(1 - Math.abs(visible - 0.5) * 2, 0, 1)
+}
+
+/** How far the field shrinks for a column. Positions scale with this as well as the arrows do. */
+function fieldZoom(mods: ModState, column: number): number {
+  return Math.max(1 - mods.column('mini', column) * 0.5, 0.01)
 }
 
 export function receptorAlpha(mods: ModState, column: number): number {

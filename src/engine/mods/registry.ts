@@ -78,6 +78,7 @@ export const MODS: Record<string, Mod> = {
   suddenoffset: wholeField(),
   hidden: perColumn(),
   hiddenoffset: wholeField(),
+  stealthpastreceptors: wholeField(),
 
   movex: perColumn(),
   movey: perColumn(),
