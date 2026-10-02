@@ -73,7 +73,7 @@ export function drawField(list: DrawList, frame: FieldFrame): void {
     const holding = status === NoteState.holding
     const offset = holding
       ? 0
-      : scrollOffset(frame.mods, song, note.beat, chart.seconds[i] as number)
+      : scrollOffset(frame.mods, song, note.column, note.beat, chart.seconds[i] as number)
     if (offset < DRAW_BEHIND || offset > DRAW_AHEAD) continue
 
     place(frame.mods, song, note.column, offset, holding ? 0 : ahead, spot)
@@ -196,7 +196,8 @@ function drawHold(list: DrawList, frame: FieldFrame, note: Note, status: number)
   const to = Math.min(end, song.beat + LOOK_AHEAD)
   if (to <= from) return
 
-  const offsetAt = (beat: number) => scrollOffset(mods, song, beat, chart.secondAt(beat))
+  const offsetAt = (beat: number) =>
+    scrollOffset(mods, song, note.column, beat, chart.secondAt(beat))
   const tail = offsetAt(end)
 
   samples.length = 0

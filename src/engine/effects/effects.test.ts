@@ -69,7 +69,7 @@ const EVERY_MOD = [
 
 describe('effects at rest', () => {
   it('scrolls one cell per beat at 1x', () => {
-    expect(scrollOffset(modsWith({}), song, 15.25, 0)).toBeCloseTo(3)
+    expect(scrollOffset(modsWith({}), song, 0, 15.25, 0)).toBeCloseTo(3)
   })
 
   it('places an arrow on its column, offset cells below its receptor', () => {
@@ -85,8 +85,8 @@ describe('effects at rest', () => {
     for (let column = 0; column < 4; column++) {
       for (const offset of [-1, 0, 0.5, 4, 9]) {
         expect(placed(zeroed, column, offset)).toEqual(placed(rest, column, offset))
-        expect(scrollOffset(zeroed, song, song.beat + offset, 0)).toBeCloseTo(
-          scrollOffset(rest, song, song.beat + offset, 0),
+        expect(scrollOffset(zeroed, song, column, song.beat + offset, 0)).toBeCloseTo(
+          scrollOffset(rest, song, column, song.beat + offset, 0),
         )
         const a = placement()
         const b = placement()
@@ -312,12 +312,12 @@ describe('mini and tiny', () => {
 
 describe('tempo-aware mods', () => {
   it('resolves mmod to whatever multiplier reaches that speed', () => {
-    expect(scrollOffset(modsWith({ mmod: 260 }), song, song.beat + 3, 0)).toBeCloseTo(6)
-    expect(scrollOffset(modsWith({ mmod: 65 }), song, song.beat + 3, 0)).toBeCloseTo(1.5)
+    expect(scrollOffset(modsWith({ mmod: 260 }), song, 0, song.beat + 3, 0)).toBeCloseTo(6)
+    expect(scrollOffset(modsWith({ mmod: 65 }), song, 0, song.beat + 3, 0)).toBeCloseTo(1.5)
   })
 
   it('lets mmod win over xmod, since it is choosing the same thing', () => {
-    expect(scrollOffset(modsWith({ mmod: 260, xmod: 9 }), song, song.beat + 3, 0)).toBeCloseTo(6)
+    expect(scrollOffset(modsWith({ mmod: 260, xmod: 9 }), song, 0, song.beat + 3, 0)).toBeCloseTo(6)
   })
 
   // At 320 the divisor is two, which stretches the kick over two beats. Beat 1.1 lands inside the
@@ -337,7 +337,7 @@ describe('tempo-aware mods', () => {
 
 describe('expand and boomerang', () => {
   const far = (set: Record<string, number>, ahead: number, seconds = 0) =>
-    scrollOffset(modsWith(set), { beat: 0, seconds, ...TEMPO }, ahead, 0)
+    scrollOffset(modsWith(set), { beat: 0, seconds, ...TEMPO }, 0, ahead, 0)
 
   // ITG swings the scroll between 0.75x and 1.75x on a three-radian-per-second cosine.
   it('breathes the scroll speed with expand', () => {
@@ -384,5 +384,34 @@ describe('blink and randomvanish', () => {
     expect(lit({ randomvanish: 1 }, FADE_LINE)).toBe(0)
     expect(lit({ randomvanish: 1 }, FADE_LINE + 3)).toBe(1)
     expect(lit({ randomvanish: 1 }, FADE_LINE - 2)).toBe(1)
+  })
+})
+
+describe('randomspeed and the mod clock', () => {
+  const far = (set: Record<string, number>, column: number, ahead: number) =>
+    scrollOffset(modsWith(set), song, column, song.beat + ahead, 0)
+
+  it('gives each note its own speed, the same one every time', () => {
+    const once = [0, 1, 2, 3].map((c) => far({ randomspeed: 1 }, c, 4))
+    const again = [0, 1, 2, 3].map((c) => far({ randomspeed: 1 }, c, 4))
+    expect(once).toEqual(again)
+    expect(new Set(once).size).toBeGreaterThan(1)
+  })
+
+  it('only ever speeds a note up, never slows it', () => {
+    for (const column of [0, 1, 2, 3]) {
+      for (const ahead of [1, 2, 3, 4, 5, 6, 7, 8]) {
+        const sped = far({ randomspeed: 1 }, column, ahead)
+        expect(sped).toBeGreaterThanOrEqual(ahead - 1e-9)
+        expect(sped).toBeLessThanOrEqual(ahead * 2 + 1e-9)
+      }
+    }
+  })
+
+  it('runs the periodic mods on a clock a chart can rescale and shift', () => {
+    const sway = (set: Record<string, number>, seconds: number) =>
+      place(modsWith({ drunk: 1, ...set }), { ...song, seconds }, 0, 0, 0, placement()).x
+    expect(sway({ globalmodtimermult: 2 }, 1)).toBeCloseTo(sway({}, 2))
+    expect(sway({ globalmodtimeroffset: 1 }, 1)).toBeCloseTo(sway({}, 2))
   })
 })

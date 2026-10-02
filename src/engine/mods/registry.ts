@@ -70,6 +70,7 @@ export const MODS: Record<string, Mod> = {
   expand: wholeField(),
   ...knobs('expand', 'size', 'period'),
   boomerang: wholeField(),
+  randomspeed: wholeField(),
 
   dizzy: perColumn(),
   roll: perColumn(),
@@ -103,6 +104,9 @@ export const MODS: Record<string, Mod> = {
   rotationx: wholeField('degrees'),
   rotationy: wholeField('degrees'),
   rotationz: wholeField('degrees'),
+
+  globalmodtimermult: wholeField('percent', 1),
+  globalmodtimeroffset: wholeField(),
 }
 
 const COLUMN_SUFFIX = /^(.*?)([0-9]+)$/
