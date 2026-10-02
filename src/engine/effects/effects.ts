@@ -61,6 +61,9 @@ const BEAT_SLOW_ABOVE_BPM = 150
 const BEAT_WAVES = 64 / 15
 const WAVE_THROW = 0.3125
 const WAVE_WAVES = 64 / 38
+const EXPAND_CENTRE = 1.25
+const EXPAND_SWING = 0.5
+const EXPAND_RATE = 3
 
 /**
  * How far an arrow still has to travel before it reaches its receptor, in cells. Positive means
@@ -77,7 +80,17 @@ export function scrollOffset(
   // `mmod` names the speed the song's fastest stretch should read at, so it resolves to whatever
   // multiplier gets there: m600 on a song that peaks at 150 is 4x.
   const mmod = mods.get('mmod')
-  const speed = mmod > 0 ? mmod / song.peakBpm : mods.get('xmod')
+  let speed = mmod > 0 ? mmod / song.peakBpm : mods.get('xmod')
+
+  const expand = mods.get('expand')
+  if (expand !== 0) {
+    const swing =
+      EXPAND_CENTRE +
+      EXPAND_SWING *
+        mods.get('expandsize') *
+        Math.cos(song.seconds * EXPAND_RATE * mods.get('expandperiod'))
+    speed *= 1 + expand * (swing - 1)
+  }
   // The acceleration mods shape the plain scroll and the speed multiplies what they produce, which
   // is the order ITG works in. At 2x a boost therefore covers twice the ground rather than bending
   // twice as hard, and wave keeps its wavelength in beats instead of in cells.
@@ -110,7 +123,18 @@ export function scrollOffset(
       Math.sin(plain * WAVE_WAVES * mods.get('waveperiod') + mods.get('waveoffset'))
   }
 
-  return (plain + adjust) * speed
+  let shaped = plain + adjust
+
+  // Boomerang bends the whole shaped scroll into a parabola, so an arrow overshoots its receptor
+  // and falls back onto it. ITG reads only whether this is on and ignores how much, which leaves no
+  // way to ease it in; blending by the level does, and lands on ITG's own curve at 100%.
+  const boomerang = mods.get('boomerang')
+  if (boomerang !== 0) {
+    const thrown = (-shaped * shaped) / FIELD_HEIGHT + 1.5 * shaped
+    shaped += boomerang * (thrown - shaped)
+  }
+
+  return shaped * speed
 }
 
 /**

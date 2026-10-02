@@ -334,3 +334,27 @@ describe('tempo-aware mods', () => {
     expect(kick(320 / 60)).toBe(0)
   })
 })
+
+describe('expand and boomerang', () => {
+  const far = (set: Record<string, number>, ahead: number, seconds = 0) =>
+    scrollOffset(modsWith(set), { beat: 0, seconds, ...TEMPO }, ahead, 0)
+
+  // ITG swings the scroll between 0.75x and 1.75x on a three-radian-per-second cosine.
+  it('breathes the scroll speed with expand', () => {
+    expect(far({ expand: 1 }, 3)).toBeCloseTo(3 * 1.75)
+    expect(far({ expand: 1 }, 3, Math.PI / 3)).toBeCloseTo(3 * 0.75)
+    expect(far({ expand: 0.5 }, 3)).toBeCloseTo(3 * 1.375)
+  })
+
+  // The parabola peaks and turns back, so a distant arrow can sit nearer than a close one.
+  it('throws arrows out and lets them fall back with boomerang', () => {
+    expect(far({ boomerang: 1 }, 3)).toBeCloseTo(-9 / FIELD_HEIGHT + 4.5)
+    expect(far({ boomerang: 1 }, 11)).toBeLessThan(far({ boomerang: 1 }, 3))
+    expect(far({ boomerang: 0 }, 11)).toBeCloseTo(11)
+  })
+
+  it('eases boomerang in by its level, which ITG cannot do', () => {
+    const full = far({ boomerang: 1 }, 6)
+    expect(far({ boomerang: 0.5 }, 6)).toBeCloseTo((6 + full) / 2)
+  })
+})

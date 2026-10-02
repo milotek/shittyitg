@@ -67,6 +67,9 @@ export const MODS: Record<string, Mod> = {
   ...knobs('wave', 'size', 'period', 'offset'),
   boost: wholeField(),
   brake: wholeField(),
+  expand: wholeField(),
+  ...knobs('expand', 'size', 'period'),
+  boomerang: wholeField(),
 
   dizzy: perColumn(),
   roll: perColumn(),
