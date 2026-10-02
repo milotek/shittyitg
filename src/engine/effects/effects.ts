@@ -1,5 +1,6 @@
 import type { Placement } from '../draw/quad.ts'
 import type { ModState } from '../mods/track.ts'
+import { ROWS_PER_BEAT } from '../notes/notes.ts'
 import {
   COLUMN_X,
   COLUMNS,
@@ -80,6 +81,7 @@ const EXPAND_RATE = 3
 export function scrollOffset(
   mods: ModState,
   song: SongPosition,
+  column: number,
   noteBeat: number,
   noteSeconds: number,
 ): number {
@@ -89,13 +91,16 @@ export function scrollOffset(
   const mmod = mods.get('mmod')
   let speed = mmod > 0 ? mmod / song.peakBpm : mods.get('xmod')
 
+  const spread = mods.get('randomspeed')
+  if (spread !== 0) speed *= 1 + spread * noteRandom(noteBeat, column)
+
   const expand = mods.get('expand')
   if (expand !== 0) {
     const swing =
       EXPAND_CENTRE +
       EXPAND_SWING *
         mods.get('expandsize') *
-        Math.cos(song.seconds * EXPAND_RATE * mods.get('expandperiod'))
+        Math.cos(modTime(mods, song) * EXPAND_RATE * mods.get('expandperiod'))
     speed *= 1 + expand * (swing - 1)
   }
   // The acceleration mods shape the plain scroll and the speed multiplies what they produce, which
@@ -181,7 +186,7 @@ export function place(
   let x = base
   let y = receptorY(mods, column) + offset * (1 - 2 * reversal(mods, column))
   let z = 0
-  const time = song.seconds
+  const time = modTime(mods, song)
 
   const drunk = mods.column('drunk', column)
   if (drunk !== 0) {
@@ -374,4 +379,25 @@ function clamp(value: number, low: number, high: number): number {
 /** ITG's own rounding: toward zero rather than down, which is what makes the strobe uneven. */
 function quantize(value: number, step: number): number {
   return Math.trunc((value + step / 2) / step) * step
+}
+
+/**
+ * The clock the periodic mods run on. ITG drives them from a wall clock, so a drunk looks slightly
+ * different on every play; this is the song's own position, which `globalmodtimer` is the flag for
+ * asking ITG to do. The two knobs let a chart run that clock at its own rate or shift it.
+ */
+function modTime(mods: ModState, song: SongPosition): number {
+  return song.seconds * mods.get('globalmodtimermult') + mods.get('globalmodtimeroffset')
+}
+
+/**
+ * A stable number in [0, 1) for one note. ITG reseeds this per stage, so a random speed is a
+ * different chart every play and no two viewings agree; keying it to the note instead means the
+ * same arrow gets the same speed for ever, which is the only version worth showing someone.
+ */
+function noteRandom(beat: number, column: number): number {
+  let h = Math.imul(Math.round(beat * ROWS_PER_BEAT), 73856093) ^ Math.imul(column, 19349663)
+  h = Math.imul(h ^ (h >>> 15), 2246822519)
+  h = Math.imul(h ^ (h >>> 13), 3266489917)
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296
 }
