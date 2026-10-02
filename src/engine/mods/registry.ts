@@ -109,20 +109,42 @@ export const MODS: Record<string, Mod> = {
   globalmodtimeroffset: wholeField(),
 }
 
+/**
+ * Spellings NotITG accepts for a mod declared above. Both land on the same track, which is the
+ * point: two names for one mod writing to two tracks would quietly fight each other all song.
+ */
+export const ALIASES: Record<string, string> = {
+  land: 'brake',
+  converge: 'centered',
+  ultraman: 'alternate',
+  bumpyz: 'bumpy',
+  bumpyzsize: 'bumpysize',
+  bumpyzperiod: 'bumpyperiod',
+  bumpyzoffset: 'bumpyoffset',
+  modtimermult: 'globalmodtimermult',
+  modtimeroffset: 'globalmodtimeroffset',
+}
+
 const COLUMN_SUFFIX = /^(.*?)([0-9]+)$/
 
-/**
- * The mod a chart's name refers to, resolving a column suffix onto its base. Undefined for a name
- * nothing answers to, which is the point: a mistyped mod is caught when the chart loads instead of
- * quietly doing nothing for the length of a song.
- */
-export function modOf(name: string): Mod | undefined {
-  const direct = MODS[name]
-  if (direct) return direct
+/** A mod and the one spelling of it the engine stores under. */
+export type Resolved = { mod: Mod; name: string }
 
-  const suffixed = COLUMN_SUFFIX.exec(name)
+/**
+ * The mod a chart's name refers to, resolving an alias and a column suffix onto the spelling the
+ * engine stores under. Undefined for a name nothing answers to, which is the point: a mistyped mod
+ * is caught when the chart loads instead of quietly doing nothing for the length of a song.
+ */
+export function modOf(name: string): Resolved | undefined {
+  const canonical = ALIASES[name] ?? name
+  const direct = MODS[canonical]
+  if (direct) return { mod: direct, name: canonical }
+
+  const suffixed = COLUMN_SUFFIX.exec(canonical)
   if (!suffixed) return undefined
-  const base = MODS[suffixed[1] as string]
+  const stem = ALIASES[suffixed[1] as string] ?? (suffixed[1] as string)
+  const base = MODS[stem]
   if (!base?.columns) return undefined
-  return Number(suffixed[2]) < COLUMNS ? base : undefined
+  if (Number(suffixed[2]) >= COLUMNS) return undefined
+  return { mod: base, name: `${stem}${suffixed[2]}` }
 }

@@ -93,3 +93,31 @@ describe('mod names', () => {
     expect(read(tracks.get('drunk2') as never, 1)).toBeCloseTo(0.5)
   })
 })
+
+describe('mod aliases', () => {
+  it('writes both spellings of a mod to one track', () => {
+    const tracks = buildTracks([
+      { beat: 0, len: 0, ease: 'instant', set: { brake: 50 } },
+      { beat: 4, len: 0, ease: 'instant', set: { land: 150 } },
+    ])
+    expect([...tracks.keys()]).toEqual(['brake'])
+    const brake = tracks.get('brake') as never
+    expect(read(brake, 1)).toBeCloseTo(0.5)
+    expect(read(brake, 5)).toBeCloseTo(1.5)
+  })
+
+  it('resolves an alias before its column suffix', () => {
+    const state = new ModState([
+      { beat: 0, len: 0, ease: 'instant', set: { bumpy: 50, bumpyz2: 50 } },
+    ])
+    state.update(1)
+    expect(state.column('bumpy', 2)).toBeCloseTo(1)
+    expect(state.column('bumpy', 1)).toBeCloseTo(0.5)
+  })
+
+  it('still refuses a column an aliased mod does not take', () => {
+    expect(() => buildTracks([{ beat: 0, len: 0, ease: 'instant', set: { land2: 50 } }])).toThrow(
+      'unknown mod "land2"',
+    )
+  })
+})

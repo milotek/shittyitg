@@ -29,13 +29,14 @@ export function buildTracks(rows: ModRow[]): Map<string, Track> {
     if (!ease) throw new Error(`unknown ease "${row.ease}" at beat ${row.beat}`)
 
     for (const [name, level] of Object.entries(row.set)) {
-      const mod = modOf(name)
-      if (!mod) throw new Error(`unknown mod "${name}" at beat ${row.beat}`)
+      const found = modOf(name)
+      if (!found) throw new Error(`unknown mod "${name}" at beat ${row.beat}`)
+      const { mod } = found
 
-      let track = tracks.get(name)
+      let track = tracks.get(found.name)
       if (!track) {
         track = { rest: mod.rest, segments: [] }
-        tracks.set(name, track)
+        tracks.set(found.name, track)
       }
 
       const from = read(track, row.beat)
